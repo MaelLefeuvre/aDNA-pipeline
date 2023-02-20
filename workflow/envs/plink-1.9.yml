@@ -1,0 +1,5 @@
+name: plink-1.9
+channels:
+  - bioconda
+dependencies:
+  - bioconda::plink=1.90b6.21

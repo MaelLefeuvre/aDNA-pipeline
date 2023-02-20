@@ -1,0 +1,113 @@
+tempdir:                     "/tmp/"
+reference:                   "data/refgen/GRCh37/Homo_sapiens.GRCh37.dna.primary_assembly.fa"
+
+# ---- Netrules configuration.
+netrules:
+  retries:                   20
+  refgen:                    "ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/"
+  TKGWV2:
+    support-files-url:       "https://drive.google.com/drive/folders/1Aw-0v_7CUorHJOLpCJ0QVCwEdH43HlO4"
+    support-files-dir:       "data/TKGWV2"
+
+# ---- BAM pre-processing and QC parameters.
+preprocess:
+  trimming:
+    min-overlap:             1                 # 1   Minimum allowed read-mate overlap.
+    min-length:              17                # 30  Minimum allowed read length
+    min-quality:             20                # 20  Minimum allowed base quality
+    qualitymax:              41                # 41  set to 93 if you intend to increase gargammel -qs | -qs2 parameters
+    seed:                    ~                 # Random seed if empty (~)
+  bwa:
+    aligner:                 "aln"             # 'mem' || 'aln'
+    collapsed-only:          False
+    bwa-aln:
+      seed-length:           1024              # 1024 (Oliva et al. 2021)
+      max-open-gap:          2                 # 2    (Oliva et al. 2021)
+      max-seed-diff:         2                 # 2
+      max-miss-prob:         0.01              # 0.01 (Oliva et al. 2021)  
+  filter:
+    min-MQ:                  20
+    min-length:              30
+  dedup:
+    method: picard                             # "samtools" | "picard" | "dedup"
+  pmd-rescaling:
+    rescaler: mapdamage                        # "mapdamage" | "pmdtools" | None ('~') to skip rescale 
+    map-damage:
+      rescale:               True
+      downsample:            ~                 # No downsampling if empty (0 < downsample < 1)
+      downsample-seed:       ~                 # Random seed if empty (~)
+    pmdtools:
+      threshold:             -19999            # in LOD. Recommended: 3 | set to -19999 to disable
+      mask-terminal-deams:   0                 # in bases. Default 0 
+
+# ---- Variant calling parameters 
+variant-calling:
+  targets:                   "data/Reich-dataset/1240K/v52.2/v52.2_1240K_public.snp"
+  caller:                    "pileupCaller"    # ANGSD || pileupCaller
+  pileup:
+    disable-BAQ:             True              # True || False
+    min-BQ:                  25
+    min-MQ:                  25
+  pileupCaller:
+    skip-transitions:        False             # True || False
+    mode:                    "randomHaploid"   # "randomHaploid" || "majorityCall"
+    sample-pop-name:         "MenteshTepe"
+    min-depth:               1
+    seed:                    ~                 # Random seed if empty
+
+# ---- Paramaters relating to merging our samples w/ Reich 1240K compendium.
+reich-merge:
+  version: 52.2
+  plink:
+    seed:                    ~                 # Random seed if empty
+
+# ---- Genetic relatedness estimation methods parameters.
+kinship:
+  READ:
+    window-size:             1000000
+    norm-method:             "median"          # median || mean || max || value
+    norm-value:              ~                 # (Float). Ignored if norm-method != "value"
+    maf:                     0.05              # (Float). Ignored if set to None (~) Requires caller='pileupCaller' and add-proxies="Reich". 
+    add-proxies:             "Reich"           # "Reich" || None (~)
+    proxies:                                   # Provide a list of proxy individuals to fetch from Reich' compendium. Requires caller='pileupCaller' and add-proxies='Reich'
+      - ART001
+      - ART004
+      - ART005
+      - ART009
+      - ART010
+      - ART011
+      - ART012
+      - ART014
+      - ART015
+      - ART017
+      - ART018
+      - ART019
+      - ART020
+      - ART022
+      - ART023
+      - ART024
+      - ART026
+      - ART027
+      - ART032
+      - ART038
+      - ART039
+      - ART042
+  GRUPS:
+    pedigree:                "workflow/scripts/grups/resources/pedigrees/siblings-pedigree.txt"
+    pedigree-pop:            "EUR"
+    contam-pop:              "AFR"
+    min-depth:               1
+    mode:                    "fst"
+    reps:                    1000
+    maf:                     0.0
+    min-qual:                25
+    seq-error-rate:          0.0               # Uses pileup quality scores if empty (~)
+    seed:                    ~                 # Random seed if empty (~)
+  TKGWV2:
+    downsample:              True             # True || False
+    downsample-N:            57600000
+    downsample-seed:         ~                 # Random seed if empty (~)
+    target-frequencies:      "data/TKGWV2/genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq"
+    min-BQ:                  30
+    min-MQ:                  20
+    min-depth:               1

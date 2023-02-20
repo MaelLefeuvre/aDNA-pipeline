@@ -1,0 +1,5 @@
+name: "gdown-4.6.0"
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::gdown=4.6.0

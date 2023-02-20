@@ -1,0 +1,10 @@
+name: TKGWV2
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - conda-forge::python
+  - conda-forge::r-base
+  - conda-forge::r-data.table
+  - bioconda::samtools=1.15
+  - bioconda::plink=1.90b6.21

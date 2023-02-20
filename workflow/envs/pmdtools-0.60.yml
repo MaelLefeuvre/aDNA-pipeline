@@ -1,0 +1,7 @@
+name: pmdtools-0.60
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioconda::pmdtools=0.60
+  - bioconda::samtools=1.15

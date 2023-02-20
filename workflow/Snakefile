@@ -1,0 +1,55 @@
+configfile: "./config/config.yml"
+configfile: "./config/samples.yml"
+
+include: "rules/00-netrules.smk"
+include: "rules/00-preprocess-reference.smk"
+include: "rules/01-align-fastqs.smk"
+include: "rules/02-preprocess-bams.smk"
+include: "rules/03-variant-calling.smk"
+include: "rules/04-merge-reich-plink.smk"
+include: "rules/05-READ.smk"
+include: "rules/05-TKGWV2.smk"
+include: "rules/05-grups-rs.smk"
+
+localrules: meta, READ, GRUPS, TKGWV2, all
+
+wildcard_constraints:
+    chr = "\d+",
+
+# ---- Generate a global metadata file. Keeps track of seeding values + commit hashes.
+checkpoint meta:
+    output:
+        metadata = "results/meta/pipeline-metadata.yml"
+    script: "scripts/print-meta.py"
+
+rule pileup:
+    input:
+        "results/02-variant-calling/01-pileup/samples.pileup"
+
+rule TKGWV2:
+    input:
+        rules.merge_TKGWV2_results.output.result
+
+rule READ:
+    input:
+        rules.run_READ.output,
+        rules.READ_get_pairwise_snp_overlap.output,
+        rules.READ_get_relatedness_coefficient.output
+
+rule GRUPS:
+    input:
+        rules.run_GRUPS.output
+
+rule all:
+    default_target: True
+    input:
+        rules.meta.output,
+        rules.TKGWV2.input,
+        rules.READ.input,
+        rules.GRUPS.input,
+        rules.pileup.input,
+
+
+
+
+

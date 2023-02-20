@@ -1,0 +1,6 @@
+name: picard-2.27.4
+channel:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::picard=2.27.4

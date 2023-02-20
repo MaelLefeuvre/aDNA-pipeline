@@ -1,0 +1,6 @@
+name: bcftools-1.15
+channels:
+    - bioconda
+    - conda-forge
+dependencies:
+    - bioconda::bcftools=1.15

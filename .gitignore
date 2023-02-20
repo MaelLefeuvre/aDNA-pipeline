@@ -1,0 +1,7 @@
+.snakemake
+original-data
+data
+results
+logs
+benchmarks
+workflow/scripts/grups/target

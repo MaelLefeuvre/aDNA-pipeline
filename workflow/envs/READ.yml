@@ -1,0 +1,6 @@
+name: READ
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::python=2.7
+  - conda-forge::r-base

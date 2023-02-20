@@ -1,0 +1,13 @@
+# Instructions:
+# 
+# 1. Add fastq.gz files into a `original-data` directory, @ the root of this repository.
+#    Directory structure must strictly follow the following nomenclature (see the README for an example)
+#    'original-data/samples/{sample-id}/{run-id}/{sample-id}_R1.fastq.gz'
+#
+# 2. Add target sample ids within this config file, under the 'samples' tag.
+#
+samples:
+  - MT23
+  - MT26
+  - MT7
+  - SK27300

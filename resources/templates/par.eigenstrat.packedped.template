@@ -1,0 +1,8 @@
+genotypename:    {{params.basename}}.geno
+snpname:         {{params.basename}}.snp
+indivname:       {{params.basename}}.ind
+outputformat: PACKEDPED
+genotypeoutname: {{params.basename}}.bed
+snpoutname:      {{params.basename}}.bim
+indivoutname:    {{params.basename}}.fam
+familynames: NO

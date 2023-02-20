@@ -1,0 +1,15 @@
+name: mapdamage-2.2.1
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioconda::mapdamage2=2.2.1
+  - bioconda::pysam>=0.6
+  - conda-forge::cython
+  - conda-forge::gsl
+  - conda-forge::python>=3.5
+  - conda-forge::r-base>=3.1
+  - conda-forge::r-inline
+  - conda-forge::r-gam
+  - conda-forge::r-rcpp
+  - conda-forge::r-rcppgsl

@@ -1,0 +1,6 @@
+name: sequencetools-1.5.2
+channels:
+    - bioconda
+    - conda-forge
+dependencies:
+    - bioconda::sequencetools=1.5.2

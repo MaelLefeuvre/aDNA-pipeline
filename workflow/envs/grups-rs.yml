@@ -1,0 +1,7 @@
+name: grups-rs
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::rust=1.65
+  - conda-forge::r
+  - conda-forge::libsvm
