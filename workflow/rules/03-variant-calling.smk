@@ -19,7 +19,7 @@ def get_pileup_input_bams(wildcards):
     PMD-rescaling method was requested by the user.
     """
     # Run through the config file and extract sample ids 
-    samples = config['samples']
+    samples = get_sample_names(wildcards)
 
     # if masking is required, delegate input definition to the appropraite rule.
     apply_masking = config['preprocess']['pmd-rescaling']['apply-masking']

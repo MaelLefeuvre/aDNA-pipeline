@@ -5,9 +5,22 @@
 #    'original-data/samples/{sample-id}/{run-id}/{sample-id}_R1.fastq.gz'
 #
 # 2. Add target sample ids within this config file, under the 'samples' tag.
-#
+# 3. Each desired run must be further specified, using the provided 
 samples:
-  - MT23
-  - MT26
-  - MT7
-  - SK27300
+  MT23:
+    2020_run0: {protocol: "paired"}
+    2020_run1: {protocol: "paired"}
+    2021_run1: {protocol: "paired"}
+  MT26:
+    2020_run0: {protocol: "paired"}
+    2020_run1: {protocol: "paired"}
+    2021_run1: {protocol: "paired"}
+  MT7:
+    2020_run0: {protocol: "paired"}
+    2020_run1: {protocol: "paired"}
+    2021_run1: {protocol: "paired"}
+  SK27300:
+    2020_run0: {protocol: "paired"}
+    2020_run1: {protocol: "paired"}
+    2021_run1: {protocol: "paired"}
+    2021_run2: {protocol: "paired"}

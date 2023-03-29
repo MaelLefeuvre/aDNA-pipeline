@@ -177,7 +177,7 @@ def get_requested_samples(wildcards):
     
     @TODO: implement ability to work directly w/ bam samples. 
     """
-    proxies = config['samples']
+    proxies = get_sample_names(wildcards)
     match config['kinship']['READ']['add-proxies']:
         case None:
             return proxies

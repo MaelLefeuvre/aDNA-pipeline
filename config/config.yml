@@ -72,28 +72,37 @@ kinship:
     maf:                     0.05              # (Float). Ignored if set to None (~) Requires caller='pileupCaller' and add-proxies="Reich". 
     add-proxies:             "Reich"           # "Reich" || None (~)
     proxies:                                   # Provide a list of proxy individuals to fetch from Reich' compendium. Requires caller='pileupCaller' and add-proxies='Reich'
-      - ART001
-      - ART004
-      - ART005
-      - ART009
-      - ART010
-      - ART011
-      - ART012
-      - ART014
-      - ART015
-      - ART017
-      - ART018
-      - ART019
-      - ART020
-      - ART022
-      - ART023
-      - ART024
-      - ART026
-      - ART027
-      - ART032
-      - ART038
-      - ART039
-      - ART042
+      - GRG003
+      - GRG008
+      - GRG015
+      - GRG016
+      - GRG018
+      - GRG019
+      - GRG021
+      - GRG022
+      - GRG023
+      - GRG025
+      - GRG027
+      - GRG028
+      - GRG032
+      - GRG035
+      - GRG041
+      - GRG043
+      - GRG047
+      - GRG049
+      - GRG050
+      - GRG052
+      - GRG056
+      - GRG057
+      - FLR001
+      - FLR002
+      - FLR003
+      - FLR004
+      - FLR005
+      - FLR007
+      - FLR010
+      - FLR013
+      - FLR014
   GRUPS:
     pedigree:                "workflow/scripts/grups/resources/pedigrees/siblings-pedigree.txt"
     pedigree-pop:            "EUR"
@@ -109,9 +118,10 @@ kinship:
     downsample:              True             # True || False
     downsample-N:            57600000
     downsample-seed:         ~                 # Random seed if empty (~)
-    target-frequencies:      "data/TKGWV2/genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq"
-    min-BQ:                  30
-    min-MQ:                  30
+    #target-frequencies:      "data/TKGWV2/genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq"
+    target-frequencies:      "data/TKGWV2/1240K/1000GP3_EUR_1240K.frq"
+    min-BQ:                  25
+    min-MQ:                  25
     min-depth:               1
   KIN:
     interval:                10000000

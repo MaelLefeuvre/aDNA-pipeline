@@ -64,6 +64,43 @@ rule adapter_removal_pe:
     """
 
 
+rule adapter_removal_se:
+    """
+    Perform Adapter Trimming for Illumina Paired-End sequuencing data. Contrary to some other
+    workflows, we don't output a combined fq file, to allow specific mapping using bwa aln.
+    """
+    input:
+        fastq       = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz",
+        metadata    = "results/meta/pipeline-metadata.yml",
+    output:
+        truncated   = temp("results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.truncated.gz"),
+        discarded   = temp("results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.discarded.gz"),
+    params:
+        base_name   = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}",
+        min_overlap = config["preprocess"]["trimming"]["min-overlap"],
+        min_length  = config["preprocess"]["trimming"]["min-overlap"],
+        min_quality = config["preprocess"]["trimming"]["min-quality"],
+        quality_max = config["preprocess"]["trimming"]["qualitymax"],
+        seed        = assign_adapter_removal_seed
+    log: "logs/01-preprocess/01-adapter_removal/adapter_removal_pe/{sample}/{run}.log"
+    benchmark: "benchmarks/01-preprocess/01-adapter_removal/adapter_removal_pe/{sample}/{run}-bench.tsv"
+    conda: "../envs/adapterremoval-2.3.3.yml"
+    priority: 4
+    threads:  4
+    shell: """
+        AdapterRemoval \
+        --threads {threads} \
+        --file1 {input.fastq} \
+        --basename {params.base_name} \
+        --minlength {params.min_length} \
+        --minquality {params.min_quality} \
+        --qualitymax {params.quality_max} \
+        --minadapteroverlap {params.min_overlap} \
+        --seed {params.seed} \
+        --gzip 2> {log}
+    """
+
+
 # ----------------------------------------------------------------------------------------------- #
 # ---- 01-A. Align to genome using BWA aln
 
@@ -114,7 +151,7 @@ rule bwa_aln:
     log:       "logs/01-preprocess/02-align/bwa_aln/{extension}/{sample}/{run}.log"
     benchmark: "benchmarks/01-preprocess/02-align/bwa_aln/{extension}/{sample}/{run}-bench.tsv"
     conda:     "../envs/bwa-0.7.17.yml"
-    group:     "bwaaln"
+    #group:     "bwaaln"
     threads:   16
     priority:  50
     shell: """
@@ -152,7 +189,7 @@ rule bwa_samse:
     log:       "logs/01-preprocess/02-align/bwa_samse/{sample}/{run}.{extension}.log"
     benchmark: "benchmarks/01-preprocess/02-align/bwa_samse/{extension}/{sample}/{run}-bench.tsv"
     conda:     "../envs/bwa-0.7.17.yml"
-    group:     "bwaaln"
+    #group:     "bwaaln"
     priority:  50
     threads:   1
     shell: """
@@ -185,7 +222,7 @@ rule bwa_sampe:
     log:       "logs/01-preprocess/02-align/bwa_sampe/{sample}/{run}.log"
     benchmark: "benchmarks/01-preprocess/02-align/bwa_sampe/{sample}/{run}.paired-bench.tsv"
     conda:     "../envs/bwa-0.7.17.yml"
-    group:     "bwaaln"
+    #group:     "bwaaln"
     priority: 50
     threads: 1
     shell: """
@@ -216,7 +253,7 @@ rule samtools_merge_aln:
     log:       "logs/01-preprocess/02-align/samtools_merge/{sample}/{run}.log"
     benchmark: "benchmarks/01-preprocess/02-align/samtools_merge/{sample}/{run}-bench.tsv"
     conda:     "../envs/samtools-1.15.yml"
-    group:     "bwaaln"
+    #group:     "bwaaln"
     threads:   1
     priority:  60
     shell: """
@@ -258,7 +295,7 @@ rule bwa_mem_se:
     log:       "logs/01-preprocess/02-align/bwa_mem_se/{sample}/{run}.bwamem.{extension}.log"
     benchmark: "benchmarks/01-preprocess/02-align/bwa_mem_se/{extension}/{sample}/{run}.bwamem-bench.tsv"
     conda:     "../envs/bwa-0.7.17.yml"
-    group:     "bwamem"
+    #group:     "bwamem"
     priority:  50
     threads:   4
     shell: """
@@ -283,7 +320,7 @@ rule bwa_mem_pe:
     log:       "logs/01-preprocess/02-align/bwa_mem_pe/{sample}/{run}.bwamem.paired.log"
     benchmark: "benchmarks/01-preprocess/02-align/bwa_mem_pe/{sample}/{run}.paired-bench.tsv"
     conda:     "../envs/bwa-0.7.17.yml"
-    group:     "bwamem"
+    #group:     "bwamem"
     priority:  50
     threads:   4
     shell: """
@@ -308,7 +345,7 @@ rule samtools_merge_mem:
     log:       "logs/01-preprocess/02-align/samtools_merge/{sample}/{run}.log"
     benchmark: "benchmarks/01-preprocess/02-align/samtools_merge/{sample}/{run}.bwamem-bench.tsv"
     conda:     "../envs/samtools-1.15.yml"
-    group:     "bwamem"
+    #group:     "bwamem"
     priority:  60
     threads:   4
     shell: """

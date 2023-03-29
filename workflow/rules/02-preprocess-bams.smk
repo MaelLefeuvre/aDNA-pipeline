@@ -25,17 +25,27 @@ def assign_aligner_algorithm(wildcards):
     """
     Decide on the appropriate bwa algorithm (aln or mem), based on the user input.
     """
+    aligner        = config['preprocess']['bwa']['aligner']
+    collapsed_only = config['preprocess']['bwa']['collapsed-only']
+    protocol       = get_illumina_protocol(wildcards)
 
-    if config["preprocess"]["bwa"]["aligner"] == "mem":
-        if config["preprocess"]["bwa"]["collapsed-only"]:
-            return expand(rules.bwa_mem_se.output.sam, sample="{sample}", run="{run}", extension="collapsed")
-        else:
-            return rules.samtools_merge_mem.output.merged
-    elif config["preprocess"]["bwa"]["aligner"] == "aln":
-        if config["preprocess"]["bwa"]["collapsed-only"]:
-            return expand(rules.bwa_samse.output.sam, sample="{sample}", run="{run}", extension="collapsed")
-        else:
-            return rules.samtools_merge_aln.output.merged
+    if protocol == "single":
+        if aligner == "mem":
+            return expand(rules.bwa_mem_se.output.sam, sample="{sample}", run="{run}", extension="truncated")
+        elif aligner == "aln":
+            return expand(rules.bwa_samse.output.sam, sample="{sample}", run="{run}", extension="truncated")
+            
+    elif protocol == "paired":
+        if aligner == "mem":
+            if collapsed_only:
+                return expand(rules.bwa_mem_se.output.sam, sample="{sample}", run="{run}", extension="collapsed")
+            else:
+                return rules.samtools_merge_mem.output.merged
+        elif aligner == "aln":
+            if collapsed_only:
+                return expand(rules.bwa_samse.output.sam, sample="{sample}", run="{run}", extension="collapsed")
+            else:
+                return rules.samtools_merge_aln.output.merged
 
 
 # ------------------------------------------------------------------------------------------------------------------- #
@@ -81,7 +91,10 @@ def define_merged_bams(wildcards):
     PMD-rescaling method was requested by the user.
     """
     # Run through the initial samples files and extract pedigree ids 
-    run_ids = os.listdir(f"original-data/samples/{wildcards.sample}")
+    # run_ids = os.listdir(f"original-data/samples/{wildcards.sample}")
+    run_ids = get_requested_sample_runs(wildcards)
+    
+    #print(get_requested_sample_runs(wildcards))
 
     # Return a list of input bam files for pileup
     return expand(

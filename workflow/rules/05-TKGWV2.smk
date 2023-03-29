@@ -156,14 +156,12 @@ rule run_TKGWV2:
         --verbose >> $base_dir/{log} 2>&1
     """
 
-
-
 def define_TKGWV2_requested_dyads(wildcards):
     """
     Extract all relevant samples pairwise comparisons for TKGWV2
     """
     # Extract the relevant comparisons.
-    pair_A, pair_B =  zip(*itertools.combinations(config['samples'], 2))
+    pair_A, pair_B =  zip(*itertools.combinations(get_sample_names(wildcards), 2))
     relevant_comparisons = expand(
         rules.run_TKGWV2.output.results,
         zip,
