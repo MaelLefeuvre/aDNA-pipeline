@@ -16,18 +16,23 @@ def assign_plink_optargs(wildcards):
 
     return f"--allow-no-sex --keep-allele-order --seed {seed}"
 
-
 rule eigenstrat_to_UCSC_BED:
     """
     Convert an eigensoft's .snp file to a generic bed file 
     (termed 'ucscbed', to avoid collisions with plink's file format).
     """
     input:
-        snp = "{directory}/{eigenstrat}.snp"
+        snp   = "{directory}/{eigenstrat}.snp"
     output:
-        bed = "{directory}/{eigenstrat}.ucscbed"
+        bed   = "{directory}/{eigenstrat}.ucscbed"
+    resources:
+        cores = lambda w, threads: threads
+    log:       "logs/generics/{directory}/eigenstrat_to_UCSC_BED-{eigenstrat}.log"
+    benchmark: "benchmarks/generics/{directory}/eigenstrat_to_UCSC_BED-{eigenstrat}.tsv"
+    conda:     "../envs/coreutils-9.1.yml"
+    threads:   1
     shell: """
-        awk '{{print $2, $4-1, $4}}' {input.snp} > {output.bed}
+        awk 'BEGIN{{OFS="\t"}}{{print $2, $4-1, $4, $5, $6}}' {input.snp} > {output.bed}
     """
 
 

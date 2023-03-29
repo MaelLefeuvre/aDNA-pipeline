@@ -10,6 +10,7 @@ include: "rules/04-merge-reich-plink.smk"
 include: "rules/05-READ.smk"
 include: "rules/05-TKGWV2.smk"
 include: "rules/05-grups-rs.smk"
+include: "rules/05-KIN.smk"
 
 localrules: meta, READ, GRUPS, TKGWV2, all
 
@@ -40,6 +41,11 @@ rule GRUPS:
     input:
         rules.run_GRUPS.output
 
+rule KIN:
+    input:
+        rules.run_KIN.output.KIN_results
+
+
 rule all:
     default_target: True
     input:
@@ -47,6 +53,7 @@ rule all:
         rules.TKGWV2.input,
         rules.READ.input,
         rules.GRUPS.input,
+        rules.KIN.input,
         rules.pileup.input,
 
 

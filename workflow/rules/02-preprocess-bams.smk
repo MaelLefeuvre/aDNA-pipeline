@@ -276,7 +276,8 @@ rule run_mapdamage:
         reference = config["reference"],
         metadata     = "results/meta/pipeline-metadata.yml"
     output:
-        bam = "results/01-preprocess/07-rescale/mapdamage/{sample}/{sample}.srt.rmdup.rescaled.bam"
+        bam = "results/01-preprocess/07-rescale/mapdamage/{sample}/{sample}.srt.rmdup.rescaled.bam",
+        misincorporation = "results/01-preprocess/07-rescale/mapdamage/{sample}/misincorporation.txt"
     params:
         downsample_seed = define_mapdamage_seed
     log:       "logs/01-preprocess/run_mapdamage/{sample}.log"
@@ -296,3 +297,29 @@ rule run_mapdamage:
     """
 
 
+def define_masking_input_bam(wildcards):
+    rescaler = config['preprocess']['pmd-rescaling']['rescaler']
+    if rescaler is None:
+        return define_dedup_input_bam(wildcards)
+    else:
+        return define_rescale_input_bam(wildcards)
+    raise RuntimeError("Failed to define a proper input bam file for pmd-mask") 
+
+rule run_pmd_mask:
+    input:
+        bam              = define_masking_input_bam,
+        bai              = lambda wildcards: define_masking_input_bam(wildcards) + ".bai",
+        reference        = config["reference"],
+        misincorporation = rules.run_mapdamage.output.misincorporation
+    output:
+        bam       = "results/01-preprocess/07-rescale/pmd-mask/{sample}/{sample}.pmd_masked.bam",
+        metrics   = "results/01-preprocess/07-rescale/pmd-mask/{sample}/{sample}.pmd_masked.metrics"
+    params:
+        threshold = config['preprocess']['pmd-rescaling']['pmd-mask']['threshold']
+    log:   "logs/01-preprocess/run_pmd_mask/{sample}.log"
+    benchmark: "benchmarks/01-preprocess/run_pmd_mask/{sample}.tsv"
+    conda: "../envs/pmd-mask.yml"
+    threads: 8
+    shell: """
+        pmd-mask -@ {threads} -b {input.bam} -f {input.reference} -m {input.misincorporation} --threshold {params.threshold} -M {output.metrics} -Ob -o {output.bam} --verbose 2> {log}
+    """

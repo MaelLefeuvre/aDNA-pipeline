@@ -31,14 +31,16 @@ preprocess:
   dedup:
     method: picard                             # "samtools" | "picard" | "dedup"
   pmd-rescaling:
-    rescaler: mapdamage                        # "mapdamage" | "pmdtools" | None ('~') to skip rescale 
+    rescaler: ~                        # "mapdamage" | "pmdtools" | None ('~') to skip rescale
+    apply-masking: True
     map-damage:
-      rescale:               True
       downsample:            ~                 # No downsampling if empty (0 < downsample < 1)
       downsample-seed:       ~                 # Random seed if empty (~)
     pmdtools:
       threshold:             -19999            # in LOD. Recommended: 3 | set to -19999 to disable
       mask-terminal-deams:   0                 # in bases. Default 0 
+    pmd-mask:
+      threshold: 0.01
 
 # ---- Variant calling parameters 
 variant-calling:
@@ -51,7 +53,7 @@ variant-calling:
   pileupCaller:
     skip-transitions:        False             # True || False
     mode:                    "randomHaploid"   # "randomHaploid" || "majorityCall"
-    sample-pop-name:         "MenteshTepe"
+    sample-pop-name:         "Cerny"
     min-depth:               1
     seed:                    ~                 # Random seed if empty
 
@@ -109,5 +111,11 @@ kinship:
     downsample-seed:         ~                 # Random seed if empty (~)
     target-frequencies:      "data/TKGWV2/genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq"
     min-BQ:                  30
-    min-MQ:                  20
+    min-MQ:                  30
     min-depth:               1
+  KIN:
+    interval:                10000000
+    p0-threshold:            10
+    roh-threshold:           ~                # (ignored if None)
+    diversity-parameter:     ~                # (ignored if None)
+    noisy-windows:           ~                # (ignored if None)

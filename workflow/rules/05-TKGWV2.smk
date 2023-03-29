@@ -10,21 +10,39 @@ def get_TKGWV2_input_bams(wildcards):
     Define the appropriate input bam files for TKGWV2, based on which PMD
     rescaler was requested by the user
     """
-    rescaler = config['preprocess']['pmd-rescaling']['rescaler']
-    match rescaler:
-        case "mapdamage":
-            print("NOTE: Using MapDamage rescaled bams for TKGWV2", file=sys.stderr)
-            root = "results/01-preprocess/07-rescale/mapdamage/{sample}/{sample}.srt.rmdup.rescaled.{ext}"
-        case "pmdtools":
-            print("NOTE: Using PMDTools rescaled bams for TKGWV2", file=sys.stderr)
-            root = "results/01-preprocess/07-rescale/pmdtools/{sample}/{sample}.srt.rmdup.filtercontam.{ext}"
-        case None:
-            print("WARNING: Skipping PMD rescaling for TKGWV2!", file=sys.stderr)
-            root = define_dedup_input_bam(wildcards)
-        case other:
-            raise RuntimeError(f'Invalid rescaler value "{rescaler}')
 
+    # if masking is required, delegate input definition to the appropraite rule.
+    apply_masking = config['preprocess']['pmd-rescaling']['apply-masking']
+    rescaler = config['preprocess']['pmd-rescaling']['rescaler']
+    if apply_masking:
+        print("NOTE: Using pmd-masked files for TKGWV2", file=sys.stderr)
+        root = "results/01-preprocess/07-rescale/pmd-mask/{sample}/{sample}.pmd_masked.{ext}"
+    elif rescaler is None:
+        print("WARNING: Skipping PMD rescaling for TKGWV2!", file=sys.stderr)
+        root = define_dedup_input_bam(wildcards)
+    else:
+        print("Note: Using {rescaler} rescaled bams for TKGWV2", file=sys.stderr)
+        root = define_rescale_input_bam(wildcards)
+    
     return expand(root, sample = ["{pairA}", "{pairB}"], ext = ["bam", "bam.bai"] )
+
+
+
+#    rescaler = config['preprocess']['pmd-rescaling']['rescaler']
+#    match rescaler:
+#        case "mapdamage":
+#            print("NOTE: Using MapDamage rescaled bams for TKGWV2", file=sys.stderr)
+#            root = "results/01-preprocess/07-rescale/mapdamage/{sample}/{sample}.srt.rmdup.rescaled.{ext}"
+#        case "pmdtools":
+#            print("NOTE: Using PMDTools rescaled bams for TKGWV2", file=sys.stderr)
+#            root = "results/01-preprocess/07-rescale/pmdtools/{sample}/{sample}.srt.rmdup.filtercontam.{ext}"
+#        case None:
+#            print("WARNING: Skipping PMD rescaling for TKGWV2!", file=sys.stderr)
+#            root = define_dedup_input_bam(wildcards)
+#        case other:
+#            raise RuntimeError(f'Invalid rescaler value "{rescaler}')
+#
+#    return expand(root, sample = ["{pairA}", "{pairB}"], ext = ["bam", "bam.bai"] )
 
 
 def TKGWV2_downsample_seed(wildcards):
@@ -45,8 +63,8 @@ rule TKGWV2_downsample_bam:
         pairs =  get_TKGWV2_input_bams,
         metadata = "results/meta/pipeline-metadata.yml"
     output:
-        pairA = "results/03-kinship/TKGWV2/{pairA}_{pairB}/{pairA}.srt.rmdup.rescaled_subsampled.bam",
-        pairB = "results/03-kinship/TKGWV2/{pairA}_{pairB}/{pairB}.srt.rmdup.rescaled_subsampled.bam"
+        pairA = "results/03-kinship/TKGWV2/{pairA}_{pairB}/{pairA}.subsampled.bam",
+        pairB = "results/03-kinship/TKGWV2/{pairA}_{pairB}/{pairB}.subsampled.bam"
     params:
         workdir     = lambda wildcards, output: dirname(output.pairA),
         downsampleN = config['kinship']['TKGWV2']['downsample-N'],
@@ -62,6 +80,9 @@ rule TKGWV2_downsample_bam:
         --downsampleN {params.downsampleN} \
         --downsampleSeed {params.seed}          >> $root_dir/{log} 2>&1  # run TK-helpers
         find . -maxdepth 1 -type l -delete      >> $root_dir/{log}       # delete symlinks.
+        
+        mv {wildcards.pairA}.*_subsampled.bam $(basename {output.pairA}) >> $root_dir/{log} 2>&1
+        mv {wildcards.pairB}.*_subsampled.bam $(basename {output.pairB}) >> $root_dir/{log} 2>&1
     """
 
 
