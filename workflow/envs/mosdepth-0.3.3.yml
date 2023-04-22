@@ -1,0 +1,5 @@
+name: mosdepth-0.3.3
+channel:
+  - bioconda
+dependencies:
+  - bioconda::mosdepth=0.3.3

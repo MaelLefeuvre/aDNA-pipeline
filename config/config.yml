@@ -26,12 +26,12 @@ preprocess:
       max-seed-diff:         2                 # 2
       max-miss-prob:         0.01              # 0.01 (Oliva et al. 2021)  
   filter:
-    min-MQ:                  20
+    min-MQ:                  25
     min-length:              30
   dedup:
     method: picard                             # "samtools" | "picard" | "dedup"
   pmd-rescaling:
-    rescaler: ~                        # "mapdamage" | "pmdtools" | None ('~') to skip rescale
+    rescaler:                ~                 # "mapdamage" | "pmdtools" | None ('~') to skip rescale
     apply-masking: True
     map-damage:
       downsample:            ~                 # No downsampling if empty (0 < downsample < 1)
@@ -42,9 +42,15 @@ preprocess:
     pmd-mask:
       threshold: 0.01
 
+# ---- Quality-control + statistics parameters
+quality-control:
+  mosdepth:
+    per-base-depth: True
+    
 # ---- Variant calling parameters 
 variant-calling:
   targets:                   "data/Reich-dataset/1240K/v52.2/v52.2_1240K_public.snp"
+  sample-pop-name:           "Cerny"           # Population name identifier for your samples.
   caller:                    "pileupCaller"    # ANGSD || pileupCaller
   pileup:
     disable-BAQ:             True              # True || False
@@ -53,7 +59,6 @@ variant-calling:
   pileupCaller:
     skip-transitions:        False             # True || False
     mode:                    "randomHaploid"   # "randomHaploid" || "majorityCall"
-    sample-pop-name:         "Cerny"
     min-depth:               1
     seed:                    ~                 # Random seed if empty
 
@@ -66,6 +71,7 @@ reich-merge:
 # ---- Genetic relatedness estimation methods parameters.
 kinship:
   READ:
+    coverage-threshold:      10000             # (e.g.: 10000, "0.01X") minimum coverage on the sample panel to be included. suffix your value with 'X' to interpret it as coverage.
     window-size:             1000000
     norm-method:             "median"          # median || mean || max || value
     norm-value:              ~                 # (Float). Ignored if norm-method != "value"
@@ -113,13 +119,14 @@ kinship:
     maf:                     0.0
     min-qual:                25
     seq-error-rate:          0.0               # Uses pileup quality scores if empty (~)
+    self-comparison:         True              # True || False
     seed:                    ~                 # Random seed if empty (~)
   TKGWV2:
     downsample:              True             # True || False
     downsample-N:            57600000
     downsample-seed:         ~                 # Random seed if empty (~)
-    #target-frequencies:      "data/TKGWV2/genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq"
-    target-frequencies:      "data/TKGWV2/1240K/1000GP3_EUR_1240K.frq"
+    target-frequencies:      "data/TKGWV2/genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq"
+    #target-frequencies:      "data/TKGWV2/1240K/1000GP3_EUR_1240K.frq"
     min-BQ:                  25
     min-MQ:                  25
     min-depth:               1

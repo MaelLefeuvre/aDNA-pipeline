@@ -1,0 +1,5 @@
+name: r-base-4.2.3
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::r-base=4.2.3

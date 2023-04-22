@@ -1,0 +1,5 @@
+name: wgscoverageplotter-20201223
+channels:
+  - bioconda
+dependencies:
+  - bioconda::jvarkit-wgscoverageplotter=20201223

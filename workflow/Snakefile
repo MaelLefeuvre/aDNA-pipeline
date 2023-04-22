@@ -28,6 +28,14 @@ rule pileup:
     input:
         "results/02-variant-calling/01-pileup/samples.pileup"
 
+rule qc:
+    input:
+        rules.run_sex_assignation.output,
+        rules.aggregate_mosdepths.output,
+        rules.aggregate_genomecovs.output,
+        rules.get_bamlist_panel_coverage.output,
+        lambda wildcards: expand(rules.plot_coverage.output.plot, sample = get_sample_names(wildcards))
+
 rule TKGWV2:
     input:
         rules.merge_TKGWV2_results.output.result
@@ -51,13 +59,10 @@ rule all:
     default_target: True
     input:
         rules.meta.output,
+        rules.pileup.input,
+        rules.qc.output,
         rules.TKGWV2.input,
         rules.READ.input,
         rules.GRUPS.input,
         rules.KIN.input,
-        rules.pileup.input,
-
-
-
-
-
+        

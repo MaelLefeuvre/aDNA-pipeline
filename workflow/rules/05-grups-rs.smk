@@ -41,8 +41,9 @@ def format_grups_optargs(wildcards):
     the randomly generated backup seed from our metadata file.
     """
     optargs        = ""
-    seed           = config['kinship']['GRUPS']['seed']
-    seq_error_rate = config['kinship']['GRUPS']['seq-error-rate']
+    seed            = config['kinship']['GRUPS']['seed']
+    seq_error_rate  = config['kinship']['GRUPS']['seq-error-rate']
+    self_comparison = config['kinship']['GRUPS']['self-comparison']
     if seed is None:
         with open(rules.meta.output.metadata) as f:
             metadata = yaml.load(f, Loader=yaml.loader.SafeLoader)
@@ -52,7 +53,10 @@ def format_grups_optargs(wildcards):
 
     if seq_error_rate is not None:
         optargs += f"--seq-error-rate {seq_error_rate}"
-    
+
+    if self_comparison:
+        optargs += " --self-comparison"
+
     return optargs
 
 

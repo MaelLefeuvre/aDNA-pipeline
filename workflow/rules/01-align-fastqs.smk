@@ -140,7 +140,7 @@ rule bwa_aln:
         reference     = config["reference"],
         bwt           = rules.index_reference_genome.output.bwt
     output:
-        sai           = temp(pipe("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.{extension}.sai"))
+        sai           = temp("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.{extension}.sai")
     params:
         seed_length   = config['preprocess']['bwa']['bwa-aln']['seed-length'],
         max_open_gap  = config['preprocess']['bwa']['bwa-aln']['max-open-gap'],

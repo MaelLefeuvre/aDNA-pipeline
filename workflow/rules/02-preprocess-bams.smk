@@ -1,5 +1,7 @@
 configfile: "./config/config.yml"
 
+localrules: aggregate_genomecovs, aggregate_mosdepths
+
 # ------------------------------------------------------------------------------------------------------------------- #
 # ---- Generic / Utility rules
 rule samtools_index:
@@ -131,7 +133,7 @@ rule samtools_sort:
         bam       = rules.samtools_merge_runs.output.merged,
         reference = config["reference"]
     output:
-        bam       = "results/01-preprocess/05-sort/{sample}/{sample}.srt.bam"
+        bam       = temp("results/01-preprocess/05-sort/{sample}/{sample}.srt.bam")
     log:       "logs/01-preprocess/samtools_sort/{sample}.log"
     benchmark: "benchmarks/01-preprocess/samtools_sort/{sample}.tsv"
     conda:     "../envs/samtools-1.15.yml"
@@ -180,7 +182,7 @@ rule apeltzer_dedup:
     input:
         bam = rules.samtools_sort.output.bam
     output:
-        bam = temp("results/01-preprocess/06-dedup/dedup/{sample}/{sample}.srt.rmdup.bam")
+        bam = "results/01-preprocess/06-dedup/dedup/{sample}/{sample}.srt.rmdup.bam"
     log: "logs/01-preprocess/apeltzer_dedup/{sample}.log"
     conda: "../envs/dedup-0.12.8.yml"
     shell: """
@@ -195,7 +197,7 @@ rule samtools_rmdup:
     input:
         bam = rules.samtools_sort.output.bam
     output:
-        bam = temp("results/01-preprocess/06-dedup/samtools/{sample}/{sample}.srt.rmdup.bam")
+        bam = "results/01-preprocess/06-dedup/samtools/{sample}/{sample}.srt.rmdup.bam"
     params:
         tmpdir = lambda wildcards, output: splitext(output.bam)[0]
     log:       "logs/01-preprocess/samtools_rmdup/{sample}.log"
@@ -209,7 +211,6 @@ rule samtools_rmdup:
     | samtools sort - \
     | samtools markdup -r -T {params.tmpdir} -s - {output.bam} 2> {log}
     """
-
 
 # ------------------------------------------------------------------------------------------------------------------- #
 # ---- 05. Perform PMD Base Quality rescaling using MapDamage 
@@ -318,6 +319,7 @@ def define_masking_input_bam(wildcards):
         return define_rescale_input_bam(wildcards)
     raise RuntimeError("Failed to define a proper input bam file for pmd-mask") 
 
+
 rule run_pmd_mask:
     input:
         bam              = define_masking_input_bam,
@@ -335,4 +337,150 @@ rule run_pmd_mask:
     threads: 8
     shell: """
         pmd-mask -@ {threads} -b {input.bam} -f {input.reference} -m {input.misincorporation} --threshold {params.threshold} -M {output.metrics} -Ob -o {output.bam} --verbose 2> {log}
+    """
+
+# ------------------------------------------------------------------------------------------------------------------- #
+# ---- 06. Perform various quality control checks and metrics.
+
+
+# Whole-genome Sequencing depth with mosdepth.
+
+def define_mosdepth_input_bam(wildcards):
+    """
+    Define the input for mosdepth sequencing depth calculation. This step is applied
+    right after duplicate removal.
+    """
+    dedup_method = config['preprocess']['dedup']['method']
+    match dedup_method:
+        case "picard":
+            return rules.picard_rmdup.output.bam
+        case "samtools":
+            return rules.samtools_rmdup.output.bam
+        case "dedup":
+            return rules.apeltez_dedup.output.bam
+        case other:
+            raise RuntimeError(f"Invalid duplicate removal method {other}")
+
+def define_mosdepth_optargs(wildcards):
+    optargs = ""
+    if not config['quality-control']['mosdepth']['per-base-depth']:
+        optargs += "--no-per-base"
+
+    return optargs
+
+rule run_mosdepth:
+    input:
+        bam = define_mosdepth_input_bam
+    output:
+        summary = "results/01-preprocess/00-quality-control/sequencing-depth/{sample}/{sample}.srt.rmdup.mosdepth.summary.txt",
+        dist    = "results/01-preprocess/00-quality-control/sequencing-depth/{sample}/{sample}.srt.rmdup.mosdepth.global.dist.txt",
+        bed     = "results/01-preprocess/00-quality-control/sequencing-depth/{sample}/{sample}.srt.rmdup.per-base.bed.gz"     if config['quality-control']['mosdepth']['per-base-depth'] else "",
+        csi     = "results/01-preprocess/00-quality-control/sequencing-depth/{sample}/{sample}.srt.rmdup.per-base.bed.gz.csi" if config['quality-control']['mosdepth']['per-base-depth'] else "", 
+    params:
+        prefix  = "results/01-preprocess/00-quality-control/sequencing-depth/{sample}/{sample}.srt.rmdup",
+        optargs = define_mosdepth_optargs
+    log:       "logs/01-preprocess/00-quality-control/{sample}/run_mosdepth.log"
+    benchmark: "benchmarks/01-preprocess/{sample}/run_mosdepth.tsv"
+    conda:     "../envs/mosdepth-0.3.3.yml"
+    threads:   1
+    shell: """
+        mosdepth {params.optargs} {params.prefix} {input.bam}
+    """ 
+
+rule aggregate_mosdepths:
+    input:
+        summaries = lambda wildcards: expand(rules.run_mosdepth.output.summary, sample = get_sample_names(wildcards))
+    output:
+        results   = "results/01-preprocess/00-quality-control/sequencing-depth/all-samples-depth.tsv"
+    log:       "logs/01-preprocess/00-quality-control/aggregate_mosdepths.log"
+    benchmark: "benchmarks/01-preprocess/00-quality-control/aggregate_mosdepths.tsv"
+    conda:     "../envs/coreutils-9.1.yml"
+    threads:   1
+    shell: """
+        awk 'BEGIN{{OFS="\t"; print "Filename", "Sequencing depth"}}$1~/total/{{print FILENAME, $4}}' {input.summaries} > {output.results} 2> {log}
+    """
+
+#Genome coverage with bedtools
+rule run_bedtools_genomecov:
+    input:
+        bam       = define_mosdepth_input_bam,
+        bai       = lambda w: define_mosdepth_input_bam(w) + ".bai",
+    output:
+        genomecov = "results/01-preprocess/00-quality-control/coverage/{sample}/{sample}.srt.rmdup.genomecov"
+    log:       "logs/01-preprocess/00-quality-control/{sample}.run-bedtools_genomecov.log"
+    benchmark: "benchmarks/01-preprocess/00-quality-control/{sample}/run_bedtools_genomecov.tsv"
+    conda:     "../envs/bedtools-2.30.0.yml"
+    threads:   1
+    shell: """
+        bedtools genomecov -ibam {input.bam} > {output.genomecov}
+    """
+
+rule aggregate_genomecovs:
+    input:
+        genomecovs = lambda wildcards: expand(rules.run_bedtools_genomecov.output.genomecov, sample = get_sample_names(wildcards))
+    output:
+        results    = "results/01-preprocess/00-quality-control/coverage/all-samples-coverage.tsv"
+    log:       "logs/01-preprocess/00-quality-control/aggregate_genomecovs.log",
+    benchmark: "benchmarks/01-preprocess/00-quality-control/aggregate_genomecovs.tsv"
+    conda:     "../envs/coreutils-9.1.yml"
+    threads:   1
+    shell: """
+        LC_ALL="C" awk 'BEGIN{{OFS="\t"; print "Filename", "Coverage"}} $1~/genome/ && $2~/^0$/ {{print FILENAME, 1-$5}}' {input.genomecovs} > {output.results} 2> {log}
+    """
+
+# Plot coverage using wgscoverageplotter
+rule plot_coverage:
+    """
+    # Regex pool:
+        - Anything but GL[0-9+].1 type contigs: '^((?!GL[0-9]+).)*$'
+        - Autosomes + XY only                 : '^(chr){0,1}([0-9]+|X|Y)$'
+        - Autosomes only                      : '^((chr){0,1}([1-9]|1[0-9]|2[0-2]))$'
+    """
+    input:
+        bam        = define_mosdepth_input_bam,
+        reference  = config['reference'],
+        dictionary = os.path.splitext(config['reference'])[0] + ".dict"
+    output:
+        plot       = "results/01-preprocess/00-quality-control/coverage/{sample}/{sample}.srt.rmdup-wgscoverage-plot.html"
+    params:
+        max_depth  = -1,
+        regex     = lambda w: '^(chr){0,1}([0-9]+|X|Y)$'
+    log:       "logs/01-preprocess/00-quality-control/{sample}/plot_coverage.log"
+    benchmark: "benchmarks/01-preprocess/00-quality-control/{sample}/plot_coverage.tsv"
+    conda:     "../envs/wgscoverageplotter-20201223.yml"
+    threads: 1
+    shell: """
+        wgscoverageplotter.py --include-contig-regex \'{params.regex}\' --max-depth {params.max_depth} --reference {input.reference} {input.bam} > {output.plot} 2> {log}
+    """
+
+# Sexing individuals using Rx and Ry ratio
+
+rule samtools_idxstats:
+    input:
+        bam = "{directory}/{bam}.bam",
+        bai = "{directory}/{bam}.bam.bai"
+    output:
+        idxstats = "{directory}/{bam}.idxstats"
+    log: "logs/generics/{directory}/{bam}/samtools_idxstats.log"
+    benchmark: "benchmarks/generics/{directory}/{bam}/samtools_idxstats.tsv"
+    conda: "../envs/samtools-1.15.yml"
+    threads: 4
+    shell: """
+        samtools idxstats -@ {threads} {input.bam} > {output.idxstats}
+    """
+
+rule run_sex_assignation:
+    input:
+        idxstats  = lambda w: expand(splitext(define_mosdepth_input_bam(w))[0] + ".idxstats", sample = get_sample_names(w))
+    output:
+        rx_ratios = "results/01-preprocess/00-quality-control/sex-assign/all_samples-Rx-ratios.tsv",
+        ry_ratios = "results/01-preprocess/00-quality-control/sex-assign/all_samples-Ry-ratios.tsv"
+    params:
+        prefix    = "results/01-preprocess/00-quality-control/sex-assign/all_samples"
+    log:       "logs/01-preprocess/00-quality-control/run_sex_assignation.log"
+    benchmark: "benchmarks/01-preprocess/00-quality-control/run_sex_assignation.log"
+    conda:     "../envs/coreutils-9.1.yml"
+    threads:   1
+    shell: """
+        Rscript workflow/scripts/rx-ry-ratio.R {params.prefix} {input.idxstats} > {log} 2>&1 
     """

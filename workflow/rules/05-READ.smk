@@ -30,6 +30,68 @@ def READ_define_random_haploid_caller(wildcards):
 
     return multiext(basefile, ".tped", ".tfam")
 
+def get_coverage_threshold(wildcards):
+    threshold = config['kinship']['READ']['coverage-threshold']
+    if str(threshold).endswith('X'):
+        threshold = threshold[:-1]
+    
+    return threshold
+
+
+def get_coverage_column(wildcards):
+    threshold = str(config['kinship']['READ']['coverage-threshold'])
+    return 3 if threshold.endswith('X') else 2
+
+
+rule filter_low_coverage_samples:
+    input:
+        coverage = rules.get_bamlist_panel_coverage.output.coverage,
+        tplink   = READ_define_random_haploid_caller
+    output:
+        excluded_samples = "results/03-kinship/READ/excluded-samples.txt",
+        tplink           = multiext("results/03-kinship/READ/READ-input-filtered", ".tped", ".tfam")
+    params:
+        coverage_threshold = get_coverage_threshold,
+        coverage_column    = get_coverage_column,
+        sample_names       = get_sample_names,
+        input_basename     = lambda wildcards, input: splitext(input.tplink[0])[0],
+        output_basename    = lambda wildcards, output: splitext(output.tplink[0])[0],
+        sample_pop_name   = config['variant-calling']['sample-pop-name'],
+        optargs           = assign_plink_optargs
+
+    log:       "logs/03-kinship/READ/filter_low_coverage_samples.log"
+    benchmark: "benchmarks/03-kinship/READ/filter_low_coverage_samples.tsv"
+    conda:     "../envs/plink-1.9.yml"
+    threads: 1
+    shell: """
+        # Get a list of individuals not meeting the threshold
+        # Note that 'cut -f1 -d. ' implies sample_names containing '.' characters is undefined behavior...
+        LC_ALL="C" awk '${params.coverage_column}<{params.coverage_threshold}' {input.coverage} \
+        | grep -P "$(echo {params.sample_names} | tr ' ' '|')" \
+        | cut -f1 -d' ' \
+        | xargs basename -a \
+        | cut -f1 -d"." \
+        | sort -u \
+        > {output.excluded_samples} 2> {log}
+
+        # Add population names
+        sed -i -E 's/^(.+)/{params.sample_pop_name} \\1/' {output.excluded_samples} > {log} 2>&1
+
+        if [ -s {output.excluded_samples} ]; then
+            plink --threads {threads} {params.optargs} \
+            --tfile {params.input_basename} \
+            --remove {output.excluded_samples} \
+            --recode transpose tab \
+            --out {params.output_basename} \
+            > {log} 2>&1
+        else
+            ln -s {input.tplink[0]} {output.tplink[0]} > {log} 2>&1;
+            ln -s {input.tplink[1]} {output.tplink[1]} > {log} 2>&1;
+        fi
+    """
+
+
+
 
 def get_READ_norm_value(wildcards):
     """
@@ -52,7 +114,8 @@ rule run_READ:
          https://bitbucket.org/tguenther/read.git
     """
     input:
-        tplink = READ_define_random_haploid_caller
+        #tplink = READ_define_random_haploid_caller
+        tplink  = rules.filter_low_coverage_samples.output.tplink
     output:
         results = "results/03-kinship/READ/READ_results",
         means   = "results/03-kinship/READ/meansP0_AncientDNA_normalized",

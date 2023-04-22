@@ -91,8 +91,8 @@ rule download_HapMapII_recombination_map:
         output_dir = lambda wildcards, output: dirname(output.map[0])
     log: "logs/00-netrules/download_HapMapII_recombination_map.log"
     shell: """
-        tar -xvzf {input.tarball} -C {params.output_dir} 2>  {log}
-        rm {input.tarball}                               2>> {log}
+        tar -xvzf {input.tarball} -C {params.output_dir} >  {log} 2>&1
+        rm {input.tarball}                               >> {log} 2>&1
     """
 
 # ------------------------------------------------------------------------------------------------ #

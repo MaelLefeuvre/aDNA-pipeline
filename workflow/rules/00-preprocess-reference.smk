@@ -47,15 +47,29 @@ rule index_reference_genome:
         refgen = config["reference"]
     output:
         amb = config["reference"] + ".amb",
-	    ann = config["reference"] + ".ann",
-	    bwt = config["reference"] + ".bwt",
-	    pac = config["reference"] + ".pac",
-	    sa  = config["reference"] + ".sa",
+        ann = config["reference"] + ".ann",
+        bwt = config["reference"] + ".bwt",
+        pac = config["reference"] + ".pac",
+        sa  = config["reference"] + ".sa",
     conda: "../envs/bwa-0.7.17.yml"
     log: "logs/00-preprocess-reference/index_reference_genome.log"
     shell: """
-	    bwa index {input.refgen} >2 {log}
-	"""
+        bwa index {input.refgen} >2 {log}
+    """
+
+rule picard_create_sequence_dictionary:
+    input:
+        reference = config['reference']
+    output:
+        dictionary = os.path.splitext(config['reference'])[0] + ".dict"
+    params:
+        tmpdir = config["tempdir"]
+    log:   "logs/00-preprocess-reference/picard_create_sequence_dictionary.log"
+    conda: "../envs/picard-2.27.4.yml"
+    shell: """
+        picard CreateSequenceDictionary --TMP_DIR {params.tmpdir} --REFERENCE {input.reference} --OUTPUT {output.dictionary} > {log} 2>&1
+    """
+
 
 # ------------------------------------------------------------------------------------------------------------------- #
 # ---- 03. Split the reference genome on a per-chromosome basis

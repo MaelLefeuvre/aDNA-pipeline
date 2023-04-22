@@ -1,0 +1,6 @@
+name: bedtools-2.30.0
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::bedtools=2.30.0

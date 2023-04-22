@@ -7,20 +7,101 @@
 # 2. Add target sample ids within this config file, under the 'samples' tag.
 # 3. Each desired run must be further specified, using the provided 
 samples:
-  MT23:
-    2020_run0: {protocol: "paired"}
-    2020_run1: {protocol: "paired"}
-    2021_run1: {protocol: "paired"}
-  MT26:
-    2020_run0: {protocol: "paired"}
-    2020_run1: {protocol: "paired"}
-    2021_run1: {protocol: "paired"}
-  MT7:
-    2020_run0: {protocol: "paired"}
-    2020_run1: {protocol: "paired"}
-    2021_run1: {protocol: "paired"}
-  SK27300:
-    2020_run0: {protocol: "paired"}
-    2020_run1: {protocol: "paired"}
-    2021_run1: {protocol: "paired"}
-    2021_run2: {protocol: "paired"}
+  BAL3:
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  BAL4:
+    sep22: {protocol: 'paired'}
+  BAL6:
+    Aou21: {protocol: 'paired'}
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  BAL19:
+    Jan21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+  BAL31B:
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  BAL32:
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  BAL33:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+  BAL35:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+  BAL45:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+    sep22: {protocol: 'paired'}
+  BAL48:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+    Nov22: {protocol: 'paired'}
+  BAL52C:
+    Jan21: {protocol: 'paired'}
+    Nov22: {protocol: 'paired'}
+  GLS14:
+    sep22: {protocol: 'paired'}
+  GLS352:
+    sep22: {protocol: 'paired'}
+  GLS356-1:
+    Jan21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  GLS356-2:
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  OLF17:
+    Jan21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  PAS6-1:
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  VNF932:
+    Jan21: {protocol: 'paired'}
+  VPB72-1:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+  VPB72-2:
+    Jan21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  VPB148A:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+  VPB148C:
+    Aou21: {protocol: 'paired'}
+    Jan21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+  VPB180:
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+    sep22: {protocol: 'paired'}
+  VPB181:
+    sep22: {protocol: 'paired'}
+  VPB192:
+    Aou21: {protocol: 'paired'}
+    Jan21: {protocol: 'paired'}
+    Nov22: {protocol: 'paired'}
+  VPB245:
+    Aou21: {protocol: 'paired'}
+    Jan22: {protocol: 'paired'}
+    Mai21: {protocol: 'single'}
+    Nov22: {protocol: 'paired'}
+  VPB257:
+    Jan21: {protocol: 'paired'}
+    Nov22: {protocol: 'paired'}
+    sep22: {protocol: 'paired'}
+  VPB274:
+    sep22: {protocol: 'paired'}
