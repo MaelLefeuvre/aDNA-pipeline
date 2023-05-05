@@ -1,0 +1,308 @@
+digraph {
+    style="rounded"
+    graph[rankdir=TD compound=true clusterrank=local newrank=true fontname=Courier]
+    node[fillcolor="gray98" shape="box", style="rounded, filled", fontname=Calibri, fontsize=10, penwidth=2, margin=0.2];
+    edge[arrowsize=0.7]
+
+    
+    download_reich[label = "Download Reich 1240K", color="red"];
+
+    subgraph cluster_reference_preprocess {
+        
+        label = "Preprocess Reference Genome"
+        node[color="green"]
+        download_refgen[label = "Download Reference Genome", color="red"];
+        decompress_refgen[label="Decompress Reference Genome"];
+        index_refgen[label="Index Reference Genome"];
+        dict_refgen[label="Create Sequence Dictionary"];
+        split_refgen[label="Split Reference Genome"];
+    }
+
+    subgraph cluster_clipadapt {
+        node[color=blueviolet]
+        label="Adapter Trimming"
+        adapter_removal[shape=box label=<
+            <TABLE BORDER="0" CELLBORDER="0"><TR>
+            <TD>AdapterRemoval</TD>
+            <TD>Single-End</TD>
+            <VR></VR>
+            <TD>Paired-End</TD>
+            </TR></TABLE>
+        >]
+
+    }
+
+    subgraph cluster_bwa {
+        node[color=blue2]
+        label="Align"
+        subgraph cluster_bwa_aln {
+            style="dashed, rounded"
+            label=" bwa mem"
+            bwa_aln[label="BWA aln"]
+            bwa_samse[label="BWA samse"]
+            bwa_sampe[label="BWA sampe"]
+            samtools_merge_aln[label="Samtools merge"]
+        }
+
+        subgraph cluster_bwa_mem {
+            style="dashed, rounded"
+            label="bwa aln"
+            bwa_mem[label="BWA mem"]
+            samtools_merge_mem[label="Samtools merge"]
+        }
+
+        define_aligner_method[shape=invhouse label="Define Aligner Method"] 
+    }
+
+    index_refgen -> bwa_samse[lhead=cluster_bwa]
+
+    subgraph cluster_preprocess {
+        label="BAM files preprocessing"
+        node[color="yellow"]
+        samtools_filter_umap[label="Samtools Filter Unmapped"]
+        samtools_merge_runs[label = "Samtools merge runs"]
+        samtools_sort[label="Samtools sort"]
+
+        subgraph cluster_rmdup {
+
+            label="Duplicate removal"
+            picard[label="Picard MarkDuplicates"]
+            dedup[label="Apeltzer Dedup"];
+            rmdup[label="Samtools markdup"]
+            define_dedup_input_bam[label="Define dedup input bam" shape=invhouse]
+        }
+
+        subgraph cluster_rescale {
+            style="dashed, rounded"
+            label="PMD rescaling"
+            mapdamage[label="MapDamage-v2"];
+            pmdtools[label="PMDTools"];
+            define_rescale_input_bam[label="Define rescale input bam" shape=invhouse]
+        }
+
+        subgraph cluster_pmdmask {
+            style="dashed, rounded"
+            label="PMD Masking"
+            pmd_mask[label="pmd-mask"]
+            define_masking_input_bam[label="Define masking input bam" shape=invhouse]
+
+        }
+    }
+
+
+    subgraph cluster_statistics {
+        
+        label= "QC / Statistics"
+        node[color=coral2]
+        define_statistics_input[label="Define statistics input bam" shape=invhouse]
+        mosdepth[label="mosdepth Sequencing Depth"]
+        genomecov[label="bedtools Genome Coverage"]
+        panelcov[label="Panel coverage"]
+        plot_cov[label="Plot WGS coverage"]
+        sex_assign[label="Compute Rx/Ry ratios."]
+
+        qc[shape=diamond]
+    }
+
+    subgraph cluster_variant_calling {
+        label = "Variant Calling"
+        node[color=deeppink2]
+        subgraph cluster_pileup {
+            label = "Pileup"
+            define_pileup_input_bam[label="Define pileup input bam" shape=invhouse]
+            pileup[label="Samtool mpileup"]
+        }
+
+        subgraph cluster_rhps{
+            label = "Random pseudo-haploid sampling"
+            subgraph cluster_pileupcaller {
+                style="dashed, rounded"
+                label = "PileupCaller"
+                pileupCaller[label="pileupCaller"]
+            }
+            subgraph cluster_angsd {
+                style="dashed, rounded"
+                label = "ANGSD"
+                angsd_haplo_call[label="ANGSD doHaploCall"]
+                haplo_to_plink[label="ANGSD haploToPlink"]
+            }
+        }
+    }
+
+    subgraph cluster_merge_reich {
+        style="dashed, rounded"
+        label = "Merge Reich "
+        node[color=palegreen3]
+        eigenstrat_to_plink[label="Convertf eigenstrat to plink"]
+        merge_reich[label="Plink merge Reich"]
+        plink_filter_autosomes[label="Plink filter autosomes"]
+        plink_filter_maf[label="Plink filter MAF"]
+        plink_extract_samples[label="Plink extract requested samples"]
+    }
+
+    subgraph cluster_kinship {
+        label = "Kinship determination"
+        subgraph cluster_KIN {
+            node[color=orange2]
+            label = "KIN"
+            run_Kingaroo[label="Run KINgaroo"]
+            run_KIN[label="Run KIN"]
+            KIN[shape=diamond]
+        }
+
+        subgraph cluster_TKGWV2 {
+            node[color=orchid3]
+            label = "TKGWV2"
+            define_TKGWV2_input[label="Define TKGWV2 Input BAM" shape=invhouse]
+            download_TKGWV2_data[label="Download TKGWV2 Support Files", color="red"]
+            downsample_BAM[label="Downsample BAM", style="dashed, rounded"]
+            run_TKGWV2[label="Run TKGWV2"]
+            TKGWV2[shape=diamond]
+        }
+
+        subgraph cluster_GRUPS {
+            node[color=greenyellow]
+            label = "GRUPS"
+            download_1000_genomes[label = "Download 1000g phase3", color="red"];
+            download_hapmap[label="Download HapMapII recombination map", color="red"]
+            fetch_sample_panel[label="Fetch samples panel", color="red"];
+            GRUPS_generate_fst_set[label= "Generate FST set"]
+            run_GRUPS[label="Run GRUPS"]
+            GRUPS[shape=diamond]
+        }
+
+        subgraph cluster_READ {
+            node[color=turquoise4]
+            label = "READ"
+            define_READ_input[label="define READ input tped" shape=invhouse]
+            READ_filter_low_cov[label="Filter low-coverage"]
+            run_READ[label="Run READ"]
+            READ_get_relatedness_coefficient[label="Get Relatedness Coefficient"]
+            READ_get_overlap[label="Get Pairwise SNP Overlap"]
+            READ[shape=diamond]
+        }
+    }
+
+    # ---- edge definitions
+    download_refgen -> decompress_refgen
+    decompress_refgen -> index_refgen
+    decompress_refgen -> dict_refgen
+    decompress_refgen -> split_refgen
+
+    adapter_removal -> bwa_aln[style=dashed]
+    adapter_removal -> bwa_mem[style=dashed]
+
+
+    bwa_aln -> bwa_samse;
+    bwa_aln -> bwa_sampe;
+    bwa_sampe -> samtools_merge_aln:nw;
+    bwa_samse -> samtools_merge_aln:ne;
+
+    bwa_mem -> samtools_merge_mem;
+
+
+    samtools_merge_aln -> define_aligner_method;
+    samtools_merge_mem -> define_aligner_method;
+
+    define_aligner_method -> samtools_filter_umap;
+
+    samtools_filter_umap -> samtools_merge_runs;
+    samtools_merge_runs -> samtools_sort;
+    samtools_sort -> picard[style=dashed]
+    samtools_sort -> dedup[style=dashed]
+    samtools_sort -> rmdup[style=dashed]
+
+    picard -> define_dedup_input_bam
+    dedup -> define_dedup_input_bam
+    rmdup -> define_dedup_input_bam
+
+    define_dedup_input_bam -> mapdamage[style=dashed]
+    define_dedup_input_bam -> pmdtools[style=dashed]
+    define_dedup_input_bam -> define_statistics_input
+
+    mapdamage -> define_rescale_input_bam
+    pmdtools  -> define_rescale_input_bam
+
+    define_statistics_input -> mosdepth;
+    define_statistics_input -> genomecov;
+    define_statistics_input -> plot_cov;
+    define_statistics_input -> sex_assign;
+    {genomecov panelcov plot_cov sex_assign mosdepth} -> qc
+
+
+    define_dedup_input_bam -> define_masking_input_bam[style=dashed]
+    define_rescale_input_bam -> define_masking_input_bam[style=dashed]
+    define_masking_input_bam -> pmd_mask
+
+
+    define_rescale_input_bam -> define_pileup_input_bam[style=dashed]
+    define_dedup_input_bam -> define_pileup_input_bam[style=dashed]
+    pmd_mask -> define_pileup_input_bam[style=dashed]
+    
+
+    define_pileup_input_bam -> pileup
+    
+    pileup -> pileupCaller[style=dashed]
+    pileup -> angsd_haplo_call[style=dashed]
+    
+
+    pileupCaller -> merge_reich[style=dashed]
+    pileupCaller -> define_READ_input[style=dashed]
+    haplo_to_plink -> define_READ_input[style=dashed]
+    define_pileup_input_bam -> panelcov
+    angsd_haplo_call -> haplo_to_plink
+
+    download_reich -> eigenstrat_to_plink
+    eigenstrat_to_plink -> merge_reich
+    #haplo_to_plink -> merge_reich[ltail=cluster_variant_calling]
+    merge_reich -> plink_filter_autosomes
+    plink_filter_autosomes -> plink_filter_maf
+    plink_filter_maf -> plink_extract_samples
+
+    # ---- KIN
+    define_pileup_input_bam -> run_Kingaroo;
+    run_Kingaroo -> run_KIN -> KIN
+
+    # ---- TKGWV2
+    define_pileup_input_bam -> define_TKGWV2_input[style=dashed]
+    define_pileup_input_bam -> downsample_BAM[style=dashed]
+    downsample_BAM-> define_TKGWV2_input[style=dashed]
+    define_TKGWV2_input -> run_TKGWV2
+    #define_pileup_input_bam -> downsample_BAM[style=dashed]
+    #downsample_BAM -> run_TKGWV2[style=dashed]
+    download_TKGWV2_data -> run_TKGWV2 -> TKGWV2
+
+    # ---- GRUPS
+    download_1000_genomes -> GRUPS_generate_fst_set
+    fetch_sample_panel -> GRUPS_generate_fst_set
+    pileup -> run_GRUPS
+    GRUPS_generate_fst_set -> run_GRUPS
+    download_hapmap -> run_GRUPS
+    download_reich -> run_GRUPS -> GRUPS
+    
+    # ---- READ
+    plink_extract_samples -> define_READ_input[style=dashed]
+
+    define_READ_input -> READ_filter_low_cov
+    READ_filter_low_cov -> run_READ
+    run_READ -> READ_get_relatedness_coefficient
+    run_READ -> READ_get_overlap
+    {run_READ READ_get_relatedness_coefficient READ_get_overlap} -> READ
+
+
+    # ------- Define Ranks
+    {rank=same adapter_removal}
+    {rank=same bwa_aln bwa_mem}
+    {rank=same bwa_sampe bwa_samse}
+    {rank=same samtools_merge_aln samtools_merge_mem}
+
+    {rank=same rmdup dedup picard}
+    {rank=same pmdtools mapdamage}
+    {rank=same pileupCaller haplo_to_plink}
+    
+    {rank=same run_Kingaroo downsample_BAM define_READ_input download_1000_genomes fetch_sample_panel}
+    {rank=same download_TKGWV2_data define_TKGWV2_input}
+    {rank=same run_GRUPS run_KIN run_READ run_TKGWV2}
+    {rank=same READ GRUPS KIN TKGWV2}
+}
+
