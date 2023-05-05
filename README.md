@@ -99,3 +99,5 @@ user@desktop:~$ git clone --recursive git@github.com:MaelLefeuvre/aDNA-pipeline.
   snakemake --use-conda --conda-frontend mamba --printshellcmds --rerun-incomplete --cores `proc` --resources mem_mb=64000
   ```
 
+## Workflow overview (Simplified Rulegraph)
+![workflow](dags/simplified-rulegraph.svg)
