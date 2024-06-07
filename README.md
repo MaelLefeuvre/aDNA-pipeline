@@ -1,5 +1,7 @@
 # A basic ancient DNA kinship estimation pipeline
 
+[![Testing](https://github.com/MaelLefeuvre/aDNA-pipeline/actions/workflows/testing.yml/badge.svg)](https://github.com/MaelLefeuvre/aDNA-pipeline/actions/workflows/testing.yml) 
+
 This repository harbors a basic, straightforward and reproducible pipeline for the alignment, pre-processing and analysis of ancient DNA whole-genome sequencing data from human samples, with a strong focus on kinship estimation.
 
 This pipeline is built upon the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system, and pre-processes samples from raw `FASTQ` files, to analysis-ready random pseudo-haploid variant calls (in [`EIGENSTRAT`](https://reich.hms.harvard.edu/software/InputFileFormats) format). The pipeline can additionally:

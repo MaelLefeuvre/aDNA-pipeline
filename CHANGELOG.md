@@ -1,4 +1,5 @@
 # Changelog
+
 ## 0.4.1:
 
 ### Features:
@@ -16,6 +17,9 @@
 - Fixed `SSL_VERIFY` error in call to `HTTPRemoveProvider()`, when downloading some datasets.
 - Fixed strict channel priority of multiple conda environments: [samtools-1.15.yml](/workflow/envs/samtools-1.15.yml), [mapdamage-2.2.1](/workflow/envs/mapdamage-2.2.1.yml), [kin-3.1.3.yml](/workflow/envs/kin-3.1.3.yml), [grups-rs-0.3.2.yml](/workflow/envs/grups-rs-0.3.2.yml), [coreutils-9.1.yml](/workflow/envs/coreutils-9.1.yml), [pmd-mask-0.3.2.yml](/workflow/envs/pmd-mask-0.3.2.yml)
 - Remove dependency on gitmodules [`grups-rs`](https://github.com/MaelLefeuvre/grups-rs) and [`pmd-mask`](https://github.com/MaelLefeuvre/pmd-mask). These dependencies are now directly fetched from github when building their corresponding conda environments.
+
+### CI/CD
+- Include very basic github action, i.e.: ensure `snakemake --dry-run` at least completes successfully
 
 ---
 
