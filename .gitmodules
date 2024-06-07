@@ -1,6 +1,0 @@
-[submodule "workflow/scripts/grups"]
-	path = workflow/scripts/grups
-	url = git@github.com:MaelLefeuvre/grups.git
-[submodule "workflow/scripts/pmd-mask"]
-	path = workflow/scripts/pmd-mask
-	url = https://github.com/MaelLefeuvre/pmd-mask.git

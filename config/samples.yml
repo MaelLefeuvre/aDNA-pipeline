@@ -1,107 +1,18 @@
 # Instructions:
 # 
-# 1. Add fastq.gz files into a `original-data` directory, @ the root of this repository.
+# 1. Add fastq.gz files into a `original-data` directory, at the root of this repository.
 #    Directory structure must strictly follow the following nomenclature (see the README for an example)
-#    'original-data/samples/{sample-id}/{run-id}/{sample-id}_R1.fastq.gz'
+#    'original-data/samples/{sample-id}/{run-id}/{sample-id}_R{1,2}.fastq.gz'
 #
 # 2. Add target sample ids within this config file, under the 'samples' tag.
-# 3. Each desired run must be further specified, using the provided 
+# 3. Specify the name and protocol of each targeted sequencing-run for each sample. 
+#    Note that this pipeline can both handle paired-end and single-end sequencing protocols.
 samples:
-  BAL3:
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  BAL4:
-    sep22: {protocol: 'paired'}
-  BAL6:
-    Aou21: {protocol: 'paired'}
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  BAL19:
-    Jan21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-  BAL31B:
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  BAL32:
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  BAL33:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-  BAL35:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-  BAL45:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-    sep22: {protocol: 'paired'}
-  BAL48:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-    Nov22: {protocol: 'paired'}
-  BAL52C:
-    Jan21: {protocol: 'paired'}
-    Nov22: {protocol: 'paired'}
-  GLS14:
-    sep22: {protocol: 'paired'}
-  GLS352:
-    sep22: {protocol: 'paired'}
-  GLS356-1:
-    Jan21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  GLS356-2:
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  OLF17:
-    Jan21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  PAS6-1:
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  VNF932:
-    Jan21: {protocol: 'paired'}
-  VPB72-1:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-  VPB72-2:
-    Jan21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  VPB148A:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-  VPB148C:
-    Aou21: {protocol: 'paired'}
-    Jan21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-  VPB180:
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-    sep22: {protocol: 'paired'}
-  VPB181:
-    sep22: {protocol: 'paired'}
-  VPB192:
-    Aou21: {protocol: 'paired'}
-    Jan21: {protocol: 'paired'}
-    Nov22: {protocol: 'paired'}
-  VPB245:
-    Aou21: {protocol: 'paired'}
-    Jan22: {protocol: 'paired'}
-    Mai21: {protocol: 'single'}
-    Nov22: {protocol: 'paired'}
-  VPB257:
-    Jan21: {protocol: 'paired'}
-    Nov22: {protocol: 'paired'}
-    sep22: {protocol: 'paired'}
-  VPB274:
-    sep22: {protocol: 'paired'}
+  test-ind1:
+    run-00: {protocol: 'paired'}
+    run-01: {protocol: 'paired'}
+  test-ind2:
+    run-00: {protocol: 'paired'}
+    run-01: {protocol: 'paired'}
+  test-ind3:
+    run-00: {protocol: 'paired'}

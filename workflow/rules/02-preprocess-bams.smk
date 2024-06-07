@@ -27,8 +27,8 @@ def assign_aligner_algorithm(wildcards):
     """
     Decide on the appropriate bwa algorithm (aln or mem), based on the user input.
     """
-    aligner        = config['preprocess']['bwa']['aligner']
-    collapsed_only = config['preprocess']['bwa']['collapsed-only']
+    aligner        = config["preprocess"]["bwa"]["aligner"]
+    collapsed_only = config["preprocess"]["bwa"]["collapsed-only"]
     protocol       = get_illumina_protocol(wildcards)
 
     if protocol == "single":
@@ -62,7 +62,7 @@ rule samtools_filter_unmapped:
     """
     input:
         sam        = assign_aligner_algorithm,
-        reference  = config["reference"],
+        reference = rules.index_reference_genome.input.refgen,
         bwt        = rules.index_reference_genome.output.bwt
     output:
         bam        = temp("results/01-preprocess/03-filter/{sample}/{run}/{sample}.bam")
@@ -95,8 +95,6 @@ def define_merged_bams(wildcards):
     # Run through the initial samples files and extract pedigree ids 
     # run_ids = os.listdir(f"original-data/samples/{wildcards.sample}")
     run_ids = get_requested_sample_runs(wildcards)
-    
-    #print(get_requested_sample_runs(wildcards))
 
     # Return a list of input bam files for pileup
     return expand(
@@ -131,7 +129,7 @@ rule samtools_sort:
     """
     input:
         bam       = rules.samtools_merge_runs.output.merged,
-        reference = config["reference"]
+        reference = ReferenceGenome.get_path()
     output:
         bam       = temp("results/01-preprocess/05-sort/{sample}/{sample}.srt.bam")
     log:       "logs/01-preprocess/samtools_sort/{sample}.log"
@@ -155,8 +153,6 @@ rule picard_rmdup:
     output:
         bam     = "results/01-preprocess/06-dedup/picard/{sample}/{sample}.srt.rmdup.bam",
         metrics = "results/01-preprocess/06-dedup/picard/{sample}/{sample}.rmdup.metrics.txt"
-    params:
-        tmpdir  = config["tempdir"]
     log:       "logs/01-preprocess/picard_rmdup/{sample}.log"
     benchmark: "benchmarks/01-preprocess/picard_rmdup/{sample}.tsv"
     conda:     "../envs/picard-2.27.4.yml"
@@ -169,7 +165,7 @@ rule picard_rmdup:
         --ASSUME_SORT_ORDER coordinate \
         --REMOVE_DUPLICATES true \
         --VALIDATION_STRINGENCY LENIENT \
-        --TMP_DIR {params.tmpdir} 2> {log}
+        --TMP_DIR {resources.tmpdir} 2> {log}
     """
 
 rule apeltzer_dedup:
@@ -235,7 +231,7 @@ rule run_pmdtools:
     input:
         bam       = define_dedup_input_bam,
         bai       = lambda wildcards: define_dedup_input_bam(wildcards) + ".bai",
-        reference = config['reference'],
+        reference = ReferenceGenome.get_path(),
     output:
         bam       = "results/01-preprocess/07-rescale/pmdtools/{sample}/{sample}.srt.rmdup.filtercontam.bam"
     params:
@@ -273,7 +269,7 @@ def define_mapdamage_seed(wildcards):
 
     seed = config['preprocess']['pmd-rescaling']['map-damage']['downsample-seed']
     if seed is None:
-        with open(rules.meta.output.metadata) as f:
+        with checkpoints.meta.get().output.metadata.open() as f:
             metadata = yaml.load(f, Loader=yaml.loader.SafeLoader)
             seed     = metadata['seed']
 
@@ -285,10 +281,10 @@ rule run_mapdamage:
     Apply PMD base quality score recalibration on a bam file using MapDamage.
     """
     input:
+        metadata  = rules.meta.output,
         bam       = define_dedup_input_bam,
         bai       = lambda wildcards: define_dedup_input_bam(wildcards) + ".bai",
-        reference = config["reference"],
-        metadata     = "results/meta/pipeline-metadata.yml"
+        reference = ReferenceGenome.get_path()
     output:
         bam = "results/01-preprocess/07-rescale/mapdamage/{sample}/{sample}.srt.rmdup.rescaled.bam",
         misincorporation = "results/01-preprocess/07-rescale/mapdamage/{sample}/misincorporation.txt"
@@ -324,7 +320,7 @@ rule run_pmd_mask:
     input:
         bam              = define_masking_input_bam,
         bai              = lambda wildcards: define_masking_input_bam(wildcards) + ".bai",
-        reference        = config["reference"],
+        reference        = ReferenceGenome.get_path(),
         misincorporation = rules.run_mapdamage.output.misincorporation
     output:
         bam       = "results/01-preprocess/07-rescale/pmd-mask/{sample}/{sample}.pmd_masked.bam",
@@ -333,7 +329,7 @@ rule run_pmd_mask:
         threshold = config['preprocess']['pmd-rescaling']['pmd-mask']['threshold']
     log:   "logs/01-preprocess/run_pmd_mask/{sample}.log"
     benchmark: "benchmarks/01-preprocess/run_pmd_mask/{sample}.tsv"
-    conda: "../envs/pmd-mask.yml"
+    conda: "../envs/pmd-mask-0.3.2.yml"
     threads: 8
     shell: """
         pmd-mask -@ {threads} -b {input.bam} -f {input.reference} -m {input.misincorporation} --threshold {params.threshold} -M {output.metrics} -Ob -o {output.bam} --verbose 2> {log}
@@ -389,7 +385,7 @@ rule run_mosdepth:
 
 rule aggregate_mosdepths:
     input:
-        summaries = lambda wildcards: expand(rules.run_mosdepth.output.summary, sample = get_sample_names(wildcards))
+        summaries = expand(rules.run_mosdepth.output.summary, sample = get_sample_names())
     output:
         results   = "results/01-preprocess/00-quality-control/sequencing-depth/all-samples-depth.tsv"
     log:       "logs/01-preprocess/00-quality-control/aggregate_mosdepths.log"
@@ -417,7 +413,7 @@ rule run_bedtools_genomecov:
 
 rule aggregate_genomecovs:
     input:
-        genomecovs = lambda wildcards: expand(rules.run_bedtools_genomecov.output.genomecov, sample = get_sample_names(wildcards))
+        genomecovs = expand(rules.run_bedtools_genomecov.output.genomecov, sample = get_sample_names())
     output:
         results    = "results/01-preprocess/00-quality-control/coverage/all-samples-coverage.tsv"
     log:       "logs/01-preprocess/00-quality-control/aggregate_genomecovs.log",
@@ -438,8 +434,8 @@ rule plot_coverage:
     """
     input:
         bam        = define_mosdepth_input_bam,
-        reference  = config['reference'],
-        dictionary = os.path.splitext(config['reference'])[0] + ".dict"
+        reference  = ReferenceGenome.get_path(),
+        dictionary = os.path.splitext(ReferenceGenome.get_path())[0] + ".dict"
     output:
         plot       = "results/01-preprocess/00-quality-control/coverage/{sample}/{sample}.srt.rmdup-wgscoverage-plot.html"
     params:
@@ -471,7 +467,7 @@ rule samtools_idxstats:
 
 rule run_sex_assignation:
     input:
-        idxstats  = lambda w: expand(splitext(define_mosdepth_input_bam(w))[0] + ".idxstats", sample = get_sample_names(w))
+        idxstats  = lambda w: expand(splitext(define_mosdepth_input_bam(w))[0] + ".idxstats", sample = get_sample_names())
     output:
         rx_ratios = "results/01-preprocess/00-quality-control/sex-assign/all_samples-Rx-ratios.tsv",
         ry_ratios = "results/01-preprocess/00-quality-control/sex-assign/all_samples-Ry-ratios.tsv"

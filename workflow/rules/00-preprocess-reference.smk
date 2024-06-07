@@ -9,79 +9,66 @@ rule samtools_faidx:
     Generate a `.fai` fasta index using samtools faidx
     """
     input:
-        fasta = "{directory}/{fasta}.fa"
+        fasta = ReferenceGenome.get_path()
     output:
-        fai   = "{directory}/{fasta}.fa.fai"
+        fai   = ReferenceGenome.get_path() + ".fai"
+    log: f"logs/00-preprocess-reference/samtools_faidx/{ReferenceGenome.get_path()}.log"
     conda: "../envs/samtools-1.15.yml"
     shell: """
-        samtools faidx {input.fasta} --fai-idx {output.fai}
+        samtools faidx {input.fasta} --fai-idx {output.fai} > {log} 2>&1
     """
-
-# ------------------------------------------------------------------------------------------------------------------- #
-# ---- 01. Decompress the reference genome.
-#          @TODO: This could be a generic rule.
 
 rule decompress_reference_genome:
     """
-    Decrompress a reference file from .fa.gz -> .fa 
+    Decompress a reference file from .fa.gz -> .fa
     """
     input:
-        # refgen = rules.download_reference_genome.output.refgen
-        refgen = "data/refgen/GRCh37/{reference}.fa.gz"
+        refgen = ReferenceGenome.get_path() + ".gz"
     output:
-        refgen = protected("data/refgen/GRCh37/{reference}.fa")
-    log: "logs/00-preprocess-reference/decompress_reference_genome/{reference}.log"
+        refgen = ReferenceGenome.get_path()
+    log: "logs/00-preprocess-reference/decompress_reference_genome.log"
+    conda: "../envs/coreutils-9.1.yml"
     shell: """
-        gunzip -v {input.refgen} > {log} 2>&1
+        gunzip -v {input.refgen} > {log} 2>&1 || test $? = 2
     """
-
-
-# ------------------------------------------------------------------------------------------------------------------- #
-# ---- 02. Index the reference genome.
 
 rule index_reference_genome:
     """
-    Generate the Burrows-Wheeler transform on the reference genome.
+    Index a referecnce genome using Burrows-Wheeler transform.
     """
     input:
-        refgen = config["reference"]
+        refgen = ReferenceGenome.get_path()
     output:
-        amb = config["reference"] + ".amb",
-        ann = config["reference"] + ".ann",
-        bwt = config["reference"] + ".bwt",
-        pac = config["reference"] + ".pac",
-        sa  = config["reference"] + ".sa",
+        amb = ReferenceGenome.get_path() + ".amb",
+        ann = ReferenceGenome.get_path() + ".ann",
+        bwt = ReferenceGenome.get_path() + ".bwt",
+        pac = ReferenceGenome.get_path() + ".pac",
+        sa  = ReferenceGenome.get_path() + ".sa",
     conda: "../envs/bwa-0.7.17.yml"
     log: "logs/00-preprocess-reference/index_reference_genome.log"
     shell: """
-        bwa index {input.refgen} >2 {log}
+        bwa index {input.refgen} > {log} 2>&1
     """
 
 rule picard_create_sequence_dictionary:
     input:
-        reference = config['reference']
+        reference = ReferenceGenome.get_path()  
     output:
-        dictionary = os.path.splitext(config['reference'])[0] + ".dict"
-    params:
-        tmpdir = config["tempdir"]
+        dictionary = os.path.splitext(ReferenceGenome.get_path())[0] + ".dict"
     log:   "logs/00-preprocess-reference/picard_create_sequence_dictionary.log"
     conda: "../envs/picard-2.27.4.yml"
     shell: """
-        picard CreateSequenceDictionary --TMP_DIR {params.tmpdir} --REFERENCE {input.reference} --OUTPUT {output.dictionary} > {log} 2>&1
+        picard CreateSequenceDictionary --TMP_DIR {resources.tmpdir} --REFERENCE {input.reference} --OUTPUT {output.dictionary} > {log} 2>&1
     """
-
-
-# ------------------------------------------------------------------------------------------------------------------- #
-# ---- 03. Split the reference genome on a per-chromosome basis
 
 rule split_reference_genome:
     """
-    Split the reference genome according to chromosome.
+    Split a reference genome on a per-chromosome basis
     """
     input:
-        refgen   = config["reference"]
+        refgen = ReferenceGenome.get_path()
     output:
-        splitted = expand("data/refgen/GRCh37/splitted/{chr}.fasta", chr=range(1,23))
+        splitted  = expand(f"{os.path.dirname(ReferenceGenome.get_path())}/splitted/{{chr}}.fasta", chr=range(1, 23))
     log: "logs/00-preprocess-reference/split_reference_genome.log"
     shell: """
         curr_wd=`pwd`

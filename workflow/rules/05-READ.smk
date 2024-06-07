@@ -20,9 +20,14 @@ def READ_define_random_haploid_caller(wildcards):
         case "pileupCaller":
             if use_proxies == "Reich":
                 if maf is not None:
-                    basefile = "results/02-variant-calling/03-merged-reich/v52.2_1240K_public-merged-samples-autosomes-maf{maf}-reqsamples".format(maf=str(maf))
+                    basefile = "results/02-variant-calling/03-merged-reich/v{major}.{minor}_1240K_public-merged-samples-autosomes-maf{maf}-reqsamples".format(
+                        maf=str(maf),
+                        **resolve_aadr_version()
+                        )
                 else:
-                    basefile = f"results/02-variant-calling/03-merged-reich/v52.2_1240K_public-merged-samples-autosomes-reqsamples"
+                    basefile = "results/02-variant-calling/03-merged-reich/v{major}.{minor}_1240K_public-merged-samples-autosomes-reqsamples".format(
+                        **resolve_aadr_version()
+                    )
             else:
                 basefile = "results/02-variant-calling/02-pileupCaller/samples"
         case other:
@@ -45,6 +50,7 @@ def get_coverage_column(wildcards):
 
 rule filter_low_coverage_samples:
     input:
+        meta     = rules.meta.output,
         coverage = rules.get_bamlist_panel_coverage.output.coverage,
         tplink   = READ_define_random_haploid_caller
     output:
@@ -53,7 +59,7 @@ rule filter_low_coverage_samples:
     params:
         coverage_threshold = get_coverage_threshold,
         coverage_column    = get_coverage_column,
-        sample_names       = get_sample_names,
+        sample_names       = get_sample_names(),
         input_basename     = lambda wildcards, input: splitext(input.tplink[0])[0],
         output_basename    = lambda wildcards, output: splitext(output.tplink[0])[0],
         sample_pop_name   = config['variant-calling']['sample-pop-name'],
@@ -66,16 +72,17 @@ rule filter_low_coverage_samples:
     shell: """
         # Get a list of individuals not meeting the threshold
         # Note that 'cut -f1 -d. ' implies sample_names containing '.' characters is undefined behavior...
+        # trailing grep commands with test $? = 1 ensures non-match is not interpreted as an error.
         LC_ALL="C" awk '${params.coverage_column}<{params.coverage_threshold}' {input.coverage} \
-        | grep -P "$(echo {params.sample_names} | tr ' ' '|')" \
+        | {{ grep -P "$(echo {params.sample_names} | tr ' ' '|')" || test $? = 1; }} \
         | cut -f1 -d' ' \
-        | xargs basename -a \
+        | {{ grep -o '[^/]*$' || test $? = 1; }} \
         | cut -f1 -d"." \
         | sort -u \
-        > {output.excluded_samples} 2> {log}
+        > {output.excluded_samples} 2>> {log}
 
         # Add population names
-        sed -i -E 's/^(.+)/{params.sample_pop_name} \\1/' {output.excluded_samples} > {log} 2>&1
+        sed -i -E 's/^(.+)/{params.sample_pop_name} \\1/' {output.excluded_samples} >> {log} 2>&1
 
         if [ -s {output.excluded_samples} ]; then
             plink --threads {threads} {params.optargs} \
@@ -85,8 +92,8 @@ rule filter_low_coverage_samples:
             --out {params.output_basename} \
             > {log} 2>&1
         else
-            ln -s {input.tplink[0]} {output.tplink[0]} > {log} 2>&1;
-            ln -s {input.tplink[1]} {output.tplink[1]} > {log} 2>&1;
+            ln -sr {input.tplink[0]} {output.tplink[0]} > {log} 2>&1;
+            ln -sr {input.tplink[1]} {output.tplink[1]} > {log} 2>&1;
         fi
     """
 
@@ -114,7 +121,6 @@ rule run_READ:
          https://bitbucket.org/tguenther/read.git
     """
     input:
-        #tplink = READ_define_random_haploid_caller
         tplink  = rules.filter_low_coverage_samples.output.tplink
     output:
         results = "results/03-kinship/READ/READ_results",
@@ -129,7 +135,7 @@ rule run_READ:
         basename    = lambda wildcards, input: splitext(input.tplink[0])[0],
     log:       "logs/03-kinship/READ/run_READ.log"
     benchmark: "benchmarks/03-kinship/READ/run_READ.tsv"
-    conda:     "../envs/READ.yml"
+    conda:     "../envs/READ-1.0.yml"
     shell: """
         cwd=$(pwd)
         cd $(dirname {output.results})               2>  $cwd/{log}
@@ -149,7 +155,10 @@ rule READ_get_pairwise_snp_overlap:
         overlap = "results/03-kinship/READ/READ_overlapping_snps.txt"
     log: "logs/03-kinship/READ/READ_get_pairwise_snp_overlap.log"
     shell: """
-        tail -n+2 {input.raw} | awk '{{a[$1]+=$10}}END{{for (i in a) print i, a[i]}}' | sort | column -t > {output.overlap} 2> {log} 
+        tail -n+2 {input.raw} \
+        | awk '{{a[$1]+=$10}}END{{for (i in a) print i, a[i]}}' \
+        | sort \
+        | column -t > {output.overlap} 2> {log} 
     """
 
 rule READ_get_relatedness_coefficient:
@@ -160,10 +169,10 @@ rule READ_get_relatedness_coefficient:
         relatedness = "results/03-kinship/READ/READ_relatedness_coefficients.txt"
     log: "logs/03-kinship/READ/READ_get_relatedness_coefficient.log"
     shell: """
-    export LC_NUMERIC="en_US.UTF-8"
-    sed 's/ /\t/g' {input.means} \
-    | join -j1 -t$'\t' - {input.results} \
-    | awk 'BEGIN{{FS="\t"; OFS=","}}{{print $1, 2*(1-$2), $6}}' \
-    | column -s, -t \
-    > {output.relatedness} 2> {log}
+        export LC_NUMERIC="en_US.UTF-8"
+        sed 's/ /\t/g' {input.means} \
+        | join -j1 -t$'\t' - {input.results} \
+        | awk 'BEGIN{{FS="\t"; OFS=","}}{{print $1, 2*(1-$2), $6}}' \
+        | column -s, -t \
+        > {output.relatedness} 2> {log}
     """

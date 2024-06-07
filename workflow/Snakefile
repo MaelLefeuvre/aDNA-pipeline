@@ -1,6 +1,16 @@
 configfile: "./config/config.yml"
 configfile: "./config/samples.yml"
 
+wildcard_constraints:
+    chr = "\d+",
+
+# ---- Generate a global metadata file. Keeps track of seeding values + commit hashes.
+checkpoint meta:
+    output:
+        metadata = "results/meta/pipeline-metadata.yml"
+    script: "scripts/print-meta.py"
+
+
 include: "rules/00-common.smk"
 include: "rules/00-netrules.smk"
 include: "rules/00-preprocess-reference.smk"
@@ -13,16 +23,27 @@ include: "rules/05-TKGWV2.smk"
 include: "rules/05-grups-rs.smk"
 include: "rules/05-KIN.smk"
 
-localrules: meta, READ, GRUPS, TKGWV2, all
+localrules: meta, fetch_data, preprocess, pileup, qc, READ, GRUPS, TKGWV2, KIN, all
 
-wildcard_constraints:
-    chr = "\d+",
 
-# ---- Generate a global metadata file. Keeps track of seeding values + commit hashes.
-checkpoint meta:
-    output:
-        metadata = "results/meta/pipeline-metadata.yml"
-    script: "scripts/print-meta.py"
+rule fetch_data:
+    """
+    Download all required datasets within the ./data/ directory
+    """
+    input:
+        expand(rules.download_1000_genomes.output.vcf, chr=range(1,23)),
+        rules.fetch_samples_panel.output.panel,
+        rules.download_reference_genome.output.refgen,
+        rules.download_HapMapII_recombination_map.output.map,
+        [file.format(**resolve_aadr_version()) for file in rules.download_reich_1240K.output.eigenstrat],
+        rules.download_TKGWV2_support_files.output.support_files
+
+
+rule preprocess:
+    input:
+        meta  = rules.meta.output,
+        files = get_pileup_input_bams
+
 
 rule pileup:
     input:
@@ -34,14 +55,11 @@ rule qc:
         rules.aggregate_mosdepths.output,
         rules.aggregate_genomecovs.output,
         rules.get_bamlist_panel_coverage.output,
-        lambda wildcards: expand(rules.plot_coverage.output.plot, sample = get_sample_names(wildcards))
-
-rule TKGWV2:
-    input:
-        rules.merge_TKGWV2_results.output.result
+        expand(rules.plot_coverage.output.plot, sample = get_sample_names())
 
 rule READ:
     input:
+        rules.meta.output,
         rules.run_READ.output,
         rules.READ_get_pairwise_snp_overlap.output,
         rules.READ_get_relatedness_coefficient.output
@@ -50,10 +68,13 @@ rule GRUPS:
     input:
         rules.run_GRUPS.output
 
+rule TKGWV2:
+    input:
+        rules.merge_TKGWV2_results.output.result
+
 rule KIN:
     input:
         rules.run_KIN.output.KIN_results
-
 
 rule all:
     default_target: True

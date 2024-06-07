@@ -11,9 +11,9 @@ def assign_adapter_removal_seed(wildcards):
     Return a user-defined seed from the config file if it was set. Else, fetch
     the randomly generated backup seed from our metadata file.
     """
-    seed = config['preprocess']['trimming']['seed']
+    seed = config["preprocess"]["trimming"]["seed"]
     if seed is None:
-        with open(rules.meta.output.metadata) as f:
+        with checkpoints.meta.get().output.metadata.open() as f:
             metadata = yaml.load(f, Loader=yaml.loader.SafeLoader)
             seed     = metadata['seed']
 
@@ -26,6 +26,7 @@ rule adapter_removal_pe:
     workflows, we don't output a combined fq file, to allow specific mapping using bwa aln.
     """
     input:
+        meta        = rules.meta.output,
         forwd       = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz",
         revrs       = "original-data/samples/{sample}/{run}/{sample}_R2.fastq.gz",
         metadata    = "results/meta/pipeline-metadata.yml",
@@ -58,8 +59,8 @@ rule adapter_removal_pe:
         --minquality {params.min_quality} \
         --qualitymax {params.quality_max} \
         --minadapteroverlap {params.min_overlap} \
-        --seed {params.seed} \
         --collapse \
+        --seed {params.seed} \
         --gzip 2> {log}
     """
 
@@ -71,7 +72,7 @@ rule adapter_removal_se:
     """
     input:
         fastq       = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz",
-        metadata    = "results/meta/pipeline-metadata.yml",
+        metadata    = rules.meta.output,
     output:
         truncated   = temp("results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.truncated.gz"),
         discarded   = temp("results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.discarded.gz"),
@@ -137,7 +138,7 @@ rule bwa_aln:
     """
     input:
         trimmed       = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.{extension}.gz",
-        reference     = config["reference"],
+        reference     = ReferenceGenome.get_path(),
         bwt           = rules.index_reference_genome.output.bwt
     output:
         sai           = temp("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.{extension}.sai")
@@ -179,7 +180,7 @@ rule bwa_samse:
     input:
         trimmed   = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.{extension}.gz",
         sai       = rules.bwa_aln.output.sai,
-        reference = config["reference"]
+        reference = ReferenceGenome.get_path()
     output:
         sam       = temp(pipe("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.{extension}.sam"))
     params:
@@ -212,7 +213,7 @@ rule bwa_sampe:
         pair2     = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.pair2.truncated.gz",
         sai1      = "results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.pair1.truncated.sai",
         sai2      = "results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.pair2.truncated.sai",
-        reference = config["reference"]
+        reference = ReferenceGenome.get_path()
     output:
         sam       = temp(pipe("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwaaln.paired.sam"))
     params:
@@ -286,7 +287,7 @@ rule bwa_mem_se:
     """
     input:
         trimmed   = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.{extension}.gz",
-        reference = config["reference"],
+        reference = ReferenceGenome.get_path(),
         bwt       = rules.index_reference_genome.output.bwt
     output:
         sam       = temp(pipe("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwamem.{extension}.sam"))
@@ -311,7 +312,7 @@ rule bwa_mem_pe:
     input:
         pair1     = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.pair1.truncated.gz",
         pair2     = "results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.pair2.truncated.gz",
-        reference = config["reference"],
+        reference = ReferenceGenome.get_path(),
         bwt       = rules.index_reference_genome.output.bwt
     output:
         sam       = temp(pipe("results/01-preprocess/02-align/{sample}/{run}/{sample}.bwamem.paired.sam"))

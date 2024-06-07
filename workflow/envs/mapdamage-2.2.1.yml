@@ -1,7 +1,7 @@
 name: mapdamage-2.2.1
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
 dependencies:
   - bioconda::mapdamage2=2.2.1
   - bioconda::pysam>=0.6

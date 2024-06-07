@@ -1,5 +1,4 @@
 .snakemake
-original-data
 data
 results
 logs

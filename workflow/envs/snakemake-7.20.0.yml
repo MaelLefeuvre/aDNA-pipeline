@@ -1,0 +1,6 @@
+name: snakemake-7.20.0
+channels:
+    - bioconda
+    - conda-forge
+dependencies:
+    - bioconda::snakemake=7.20.0

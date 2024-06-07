@@ -2,56 +2,49 @@ import itertools
 from os.path import splitext, basename
 from functools import partial
 
+configfile: "config/netrules.yml"
+
 localrules: merge_TKGWV2_results
+
+
 # ------------------------------------------------------------------------------------------------------------------- #
+
+
 
 def get_TKGWV2_input_bams(wildcards):
     """
     Define the appropriate input bam files for TKGWV2, based on which PMD
     rescaler was requested by the user
     """
-
-    # if masking is required, delegate input definition to the appropraite rule.
+    # ---- If masking is required, delegate input definition to the appropraite rule.
     apply_masking = config['preprocess']['pmd-rescaling']['apply-masking']
     rescaler = config['preprocess']['pmd-rescaling']['rescaler']
     if apply_masking:
-        print("NOTE: Using pmd-masked files for TKGWV2", file=sys.stderr)
+        msg  = "[NOTE]: Using pmd-masked files for TKGWV2"
         root = "results/01-preprocess/07-rescale/pmd-mask/{sample}/{sample}.pmd_masked.{ext}"
     elif rescaler is None:
-        print("WARNING: Skipping PMD rescaling for TKGWV2!", file=sys.stderr)
+        msg  = "[NOTE]: Skipping PMD rescaling for TKGWV2"
         root = define_dedup_input_bam(wildcards)
     else:
-        print("Note: Using {rescaler} rescaled bams for TKGWV2", file=sys.stderr)
+        msg  = "[Note]: Using {rescaler} rescaled bams for TKGWV2"
         root = define_rescale_input_bam(wildcards)
-    
+
+    # ---- Print message on first call only. 
+    if getattr(get_TKGWV2_input_bams, 'first_call', None) is None:
+        print(msg, file=sys.stderr)
+        get_TKGWV2_input_bams.first_call = False
+
     return expand(root, sample = ["{pairA}", "{pairB}"], ext = ["bam", "bam.bai"] )
-
-
-
-#    rescaler = config['preprocess']['pmd-rescaling']['rescaler']
-#    match rescaler:
-#        case "mapdamage":
-#            print("NOTE: Using MapDamage rescaled bams for TKGWV2", file=sys.stderr)
-#            root = "results/01-preprocess/07-rescale/mapdamage/{sample}/{sample}.srt.rmdup.rescaled.{ext}"
-#        case "pmdtools":
-#            print("NOTE: Using PMDTools rescaled bams for TKGWV2", file=sys.stderr)
-#            root = "results/01-preprocess/07-rescale/pmdtools/{sample}/{sample}.srt.rmdup.filtercontam.{ext}"
-#        case None:
-#            print("WARNING: Skipping PMD rescaling for TKGWV2!", file=sys.stderr)
-#            root = define_dedup_input_bam(wildcards)
-#        case other:
-#            raise RuntimeError(f'Invalid rescaler value "{rescaler}')
-#
-#    return expand(root, sample = ["{pairA}", "{pairB}"], ext = ["bam", "bam.bai"] )
 
 
 def TKGWV2_downsample_seed(wildcards):
     seed = config['kinship']['TKGWV2']['downsample-seed']
     if seed is None:
-        with open(rules.meta.output.metadata) as f:
+        with checkpoints.meta.get().output.metadata.open() as f:
             metadata = yaml.load(f, Loader=yaml.loader.SafeLoader)
             seed     = metadata['seed']
     return seed
+
 
 rule TKGWV2_downsample_bam:
     """
@@ -60,8 +53,8 @@ rule TKGWV2_downsample_bam:
      - output files are identified with the "_subsampled.bam" suffix.
     """
     input:
-        pairs =  get_TKGWV2_input_bams,
-        metadata = "results/meta/pipeline-metadata.yml"
+        pairs    = get_TKGWV2_input_bams,
+        metadata = rules.meta.output
     output:
         pairA = "results/03-kinship/TKGWV2/{pairA}_{pairB}/{pairA}.subsampled.bam",
         pairB = "results/03-kinship/TKGWV2/{pairA}_{pairB}/{pairB}.subsampled.bam"
@@ -104,7 +97,7 @@ rule run_TKGWV2:
     """
     input:
         bams          = define_TKGWV2_input,
-        reference     = config["reference"],
+        reference     = ReferenceGenome.get_path(),
         bed_targets   = "data/TKGWV2/genomeWideVariants_hg19/1000GP3_22M_noFixed_noChr.bed",
         plink_targets = multiext("data/TKGWV2/genomeWideVariants_hg19/DummyDataset_EUR_22M_noFixed", ".bed", ".bim", ".fam"),
         frequencies   = config['kinship']['TKGWV2']['target-frequencies']
@@ -161,7 +154,7 @@ def define_TKGWV2_requested_dyads(wildcards):
     Extract all relevant samples pairwise comparisons for TKGWV2
     """
     # Extract the relevant comparisons.
-    pair_A, pair_B =  zip(*itertools.combinations(get_sample_names(wildcards), 2))
+    pair_A, pair_B =  zip(*itertools.combinations(get_sample_names(), 2))
     relevant_comparisons = expand(
         rules.run_TKGWV2.output.results,
         zip,

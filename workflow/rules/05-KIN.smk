@@ -47,7 +47,7 @@ rule run_KINgaroo:
     input:
         bamlist        = rules.symlink_KINgaroo_input_bams.output.bamlist,
         linkdir        = rules.symlink_KINgaroo_input_bams.output.linkdir,
-        targets        = os.path.splitext(config["variant-calling"]["targets"])[0] + ".ucscbed",
+        targets        = lambda w: os.path.splitext(parse_snp_targets_file(w))[0] + ".ucscbed",
     output:
         kingaroo_dir   =  directory("results/03-kinship/KIN/kingaroo"),
         bedfiles       = directory("results/03-kinship/KIN/kingaroo/bedfiles"),

@@ -18,23 +18,28 @@ def get_pileup_input_bams(wildcards):
     Define the appropriate input bam for the variant caller, based on which 
     PMD-rescaling method was requested by the user.
     """
+    # ---- Print message on first call only.
+    def maybe_print(*args, **kwargs):
+        if getattr(get_pileup_input_bams, 'first_call', None) is None:
+            print(*args, **kwargs)
+            get_pileup_input_bams.first_call = False
+
     # Run through the config file and extract sample ids 
-    samples = get_sample_names(wildcards)
+    samples = get_sample_names()
 
     # if masking is required, delegate input definition to the appropraite rule.
     apply_masking = config['preprocess']['pmd-rescaling']['apply-masking']
     if apply_masking:
-        print("Applying pmd-mask for variant calling.", file=sys.stderr)
+        maybe_print("[NOTE]: Applying pmd-mask for variant calling.", file=sys.stderr)
         return expand(rules.run_pmd_mask.output.bam, sample = samples)
-
 
     # Return a list of input bam files for pileup
     rescaler = config['preprocess']['pmd-rescaling']['rescaler']
     if rescaler is None:
-        print("WARNING: Skipping PMD Rescaling for variant calling!", file=sys.stderr)
+        maybe_print("[NOTE]: Skipping PMD Rescaling for variant calling!", file=sys.stderr)
         return expand(define_dedup_input_bam(wildcards), sample = samples)
     else:
-        print("Note: Applying {rescaler} for variant calling.", file=sys.stderr)
+        maybe_print("[NOTE]: Applying {rescaler} for variant calling.", file=sys.stderr)
         return expand(define_rescale_input_bam(wildcards), sample = samples)
 
     raise RuntimeError(f'Invalid rescaler value "{rescaler}')
@@ -75,9 +80,9 @@ rule samtools_pileup:
     """
     input:
         bamlist   = rules.generate_bam_list.output.bamlist,
-        targets   = os.path.splitext(config['variant-calling']['targets'])[0] + '.ucscbed',
-        reference = config["reference"],
-        fai       = config["reference"] + ".fai",
+        targets   = lambda w: os.path.splitext(parse_snp_targets_file(w))[0] + '.ucscbed',
+        reference = ReferenceGenome.get_path(),
+        rai       = ReferenceGenome.get_path() + ".fai"
     output:
         pileup    = "results/02-variant-calling/01-pileup/samples.pileup"
     params:
@@ -131,7 +136,8 @@ def parse_pileup_caller_flags(wildcards):
 
     seed = config['variant-calling']['pileupCaller']['seed']
     if seed is None:
-        with open(rules.meta.output.metadata) as f:
+        with checkpoints.meta.get().output.metadata.open() as f:
+#        with open(rules.meta.output.metadata) as f:
             metadata = yaml.load(f, Loader=yaml.loader.SafeLoader)
             seed     = metadata['seed']
 
@@ -152,16 +158,17 @@ rule pileup_caller:
     Perform random sampling variant calling uing SequenceTools' pileupCaller
     """
     input:
+        meta              = rules.meta.output,
         pileup            = rules.samtools_pileup.output.pileup,
         bamlist           = rules.generate_bam_list.output.bamlist,
-        targets           = os.path.splitext(config["variant-calling"]["targets"])[0] + ".snp",
+        targets           = lambda w: os.path.splitext(parse_snp_targets_file(w))[0] + ".snp",
         metadata          = "results/meta/pipeline-metadata.yml"
     output:
         plink             = multiext("results/02-variant-calling/02-pileupCaller/samples", ".bed", ".bim", ".fam"),
         sample_names_file = "results/02-variant-calling/02-pileupCaller/samples-names.txt"
     params:
-        basename          = "results/02-variant-calling/02-pileupCaller/samples",
         optargs           = parse_pileup_caller_flags,
+        basename          = "results/02-variant-calling/02-pileupCaller/samples",
         min_depth         = config['variant-calling']["pileupCaller"]["min-depth"],
         seed              = config['variant-calling']['pileupCaller']["seed"],
         sample_pop_name   = config['variant-calling']['sample-pop-name']
@@ -190,8 +197,8 @@ rule ANGSD_random_haploid:
     input:
         pileup    = rules.samtools_pileup.output.pileup,
         bamlist   = rules.generate_bam_list.output.bamlist,
-        reference = config['reference'],
-        fai       = config["reference"] + ".fai",
+        reference = ReferenceGenome.get_path(),
+        fai       = ReferenceGenome.get_path() + ".fai"
     output:
         haplos    = "results/02-variant-calling/02-ANGSD/samples.haplo.gz"
     params:

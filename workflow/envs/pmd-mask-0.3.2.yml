@@ -1,0 +1,14 @@
+name: pmd-mask
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::rust=1.74
+  - conda-forge::zlib>=1.2.13
+  - conda-forge::libcurl
+  - conda-forge::cmake>=3.25
+  - conda-forge::compilers>=1.5.2
+  - conda-forge::c-compiler>=1.5.2
+  - conda-forge::cxx-compiler>=1.5.2
+  - conda-forge::zlib>=1.2.13
+  - conda-forge::zlib-ng>=2.0.6
+  - conda-forge::libdeflate>=1.17

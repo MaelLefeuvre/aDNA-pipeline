@@ -8,9 +8,9 @@ def assign_plink_optargs(wildcards):
     Return a user-defined seed from the config file if it was set. Else, fetch
     the randomly generated backup seed from our metadata file.
     """
-    seed = config['reich-merge']['plink']['seed']
+    seed = config['variant-calling']['plink']['seed']
     if seed is None:
-        with open(rules.meta.output.metadata) as f:
+        with checkpoints.meta.get().output.metadata.open() as f:
             metadata = yaml.load(f, Loader=yaml.loader.SafeLoader)
             seed     = metadata['seed']
 
@@ -41,7 +41,7 @@ rule plink_bfile_to_tped:
     Convert a binarized PLINK fileset into a human readable transposed set.
     """
     input:
-        metadata =  "results/meta/pipeline-metadata.yml",
+        metadata = rules.meta.output,
         bfile    = multiext("{directory}/{file}", ".bed", ".bim", ".fam"),
     output:
         tplink   = multiext("{directory}/{file}", ".tped", ".tfam") 
@@ -92,25 +92,17 @@ rule convertf_eigenstrat_to_plink:
         convertf -p {input.parfile} > {log} 2>&1 
     """
 
-def resolve_reich_version():
-    """
-    Split a floating point version identifier into two major / minor wildcards
-    """
-    version = config['reich-merge']['version']
-    (major, minor) = str(version).split(".")
-    return {'major': major, 'minor': minor}
-
 rule plink_merge_reich:
     """
     Merge our samples variant callset with the 1240K compendium dataset.
     Note that this operation uses plink, and not mergeit.
     """
     input:
-        metadata         =  "results/meta/pipeline-metadata.yml",
-        reich            = multiext(splitext(rules.download_reich_1240K.output.eigenstrat[0])[0].format(**resolve_reich_version()), ".bed", ".bim", ".fam"),
+        metadata         = rules.meta.output,
+        reich            = multiext(splitext(rules.download_reich_1240K.output.eigenstrat[0])[0].format(**resolve_aadr_version()), ".bed", ".bim", ".fam"),
         samples          = multiext("results/02-variant-calling/02-pileupCaller/samples", ".bed", ".bim", ".fam"),
     output:
-        merged           = multiext("results/02-variant-calling/03-merged-reich/v52.2_1240K_public-merged-samples", ".bed", ".bim", ".fam")
+        merged           = multiext("results/02-variant-calling/03-merged-reich/v{major}.{minor}_1240K_public-merged-samples".format(**resolve_aadr_version()), ".bed", ".bim", ".fam")
     params:
         reich_basename   = lambda wildcards, input: splitext(input.reich[0])[0],
         samples_basename = lambda wildcards, input: splitext(input.samples[0])[0],
@@ -129,7 +121,7 @@ rule plink_filter_autosomes:
     Filter out non-autossomal chromosomes from a generic bfile set [bed|bim|fam].
     """
     input:
-        metadata        =  "results/meta/pipeline-metadata.yml",
+        metadata        = rules.meta.output,
         bfile           = multiext("{directory}/{filestem}", ".bed", ".bim", ".fam")
     output:
         bfile           = multiext("{directory}/{filestem}-autosomes", ".bed", ".bim", ".fam")
@@ -150,7 +142,7 @@ rule plink_filter_maf:
     Perform minor allele filtration on a generic bfile set [bed|bim|fam].
     """
     input:
-        metadata        =  "results/meta/pipeline-metadata.yml",
+        metadata        = rules.meta.output,
         bfile           = multiext("{directory}/{filestem}", ".bed", ".bim", ".fam")
     output:
         bfile           = multiext("{directory}/{filestem}-maf{maf}", ".bed", ".bim", ".fam")
@@ -177,7 +169,7 @@ def get_requested_samples(wildcards):
     
     @TODO: implement ability to work directly w/ bam samples. 
     """
-    proxies = get_sample_names(wildcards)
+    proxies = get_sample_names()
     match config['kinship']['READ']['add-proxies']:
         case None:
             return proxies
@@ -214,7 +206,7 @@ rule plink_extract_requested_samples:
     [bed|bim|fam] fileset
     """
     input:
-        metadata        =  "results/meta/pipeline-metadata.yml",
+        metadata        = rules.meta.output,
         keepfile        = rules.make_plink_keepfile.output.keepfile,
         bfile           = multiext("{directory}/{filestem}", ".bed", ".bim", ".fam")
     output:

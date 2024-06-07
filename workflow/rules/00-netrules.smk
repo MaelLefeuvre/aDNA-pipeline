@@ -1,12 +1,11 @@
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
-from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 
 from os.path import dirname
 
-FTP  = FTPRemoteProvider(retry=config['netrules']['retries']) # Anonymous 
 HTTP = HTTPRemoteProvider() # Anonymous 
 
 configfile: "config/config.yml"
+configfile: "config/netrules.yml"
 
 # ------------------------------------------------------------------------------------------------ #
 # ---- 1000g-phase3 dataset
@@ -17,7 +16,7 @@ rule download_1000_genomes:
     http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
     """
     input:
-        vcf = FTP.remote("ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz")
+        vcf = HTTP.remote("ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz")
     output:
         vcf = "data/vcf/1000g-phase3/00-original/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz"
     log: "logs/00-netrules/download_1000_genomes/download_1000_genomes-chr{chr}.log"
@@ -30,7 +29,7 @@ rule fetch_samples_panel:
     Download samples metadata from the 1000g FTP website
     """
     input:
-        panel = FTP.remote("ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel")
+        panel = HTTP.remote("ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel")
     output:
         panel = "data/vcf/1000g-phase3/samples-list/integrated_call_samples_v3.20130502.ALL.panel"
     log: "logs/00-netrules/fetch_samples_panel.log"
@@ -45,8 +44,10 @@ rule download_reich_1240K:
     """
     Download the 1240K dataset from Reich Lab's website.
     """
+    wildcard_constraints:
+        major = "\d+"
     input:
-        tarball    = HTTP.remote("https://reichdata.hms.harvard.edu/pub/datasets/amh_repo/curated_releases/V{major}/V{major}.{minor}/SHARE/public.dir/v{major}.{minor}_1240K_public.tar")
+        tarball    = HTTP.remote("reichdata.hms.harvard.edu/pub/datasets/amh_repo/curated_releases/V{major}/V{major}.{minor}/SHARE/public.dir/v{major}.{minor}_1240K_public.tar", verify=False)
     output:
         eigenstrat = multiext("data/Reich-dataset/1240K/v{major}.{minor}/v{major}.{minor}_1240K_public", ".snp", ".ind", ".geno")
     params:
@@ -62,13 +63,12 @@ rule download_reich_1240K:
 rule download_reference_genome:
     """
     Download a reference genome from a predefined ftp URL
-    human_g1k_v37 is malformed... see: https://github.com/hammerlab/biokepi/issues/117
     """
     input:
-        refgen = FTP.remote("ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/{reference}.fa.gz")
+        refgen = HTTP.remote(ReferenceGenome.get_url())
     output:
-        refgen = "data/refgen/GRCh37/{reference}.fa.gz"
-    log: "logs/00-netrules/download_reference_genome/{reference}.log"
+        refgen  = ReferenceGenome.get_path() + ".gz"
+    log: f"logs/00-netrules/download_reference_genome/{ReferenceGenome.get_path()}.log"
     shell: """
         mv {input.refgen} {output.refgen}
     """
@@ -86,7 +86,7 @@ rule download_HapMapII_recombination_map:
     output:
         map     = expand("data/recombination-maps/HapMapII_GRCh37/genetic_map_GRCh37_chr{chr}.txt", chr=range(1, 23)),
         exclude = temp(expand("data/recombination-maps/HapMapII_GRCh37/genetic_map_GRCh37_chr{chr}.txt", chr=["X", "X_par1", "X_par2"])),
-        readme  = "data/recombination-maps/HapMapII_GRCh37/README.txt"
+        readme  = temp("data/recombination-maps/HapMapII_GRCh37/README.txt")
     params:
         output_dir = lambda wildcards, output: dirname(output.map[0])
     log: "logs/00-netrules/download_HapMapII_recombination_map.log"
@@ -104,9 +104,10 @@ rule download_TKGWV2_support_files:
     """
     output:
         support_files = expand("{directory}/{dataset}", 
-            directory = config['netrules']['TKGWV2']['support-files-dir'],
+            directory = config["netrules"]["TKGWV2"]["support-files-dir"],
             dataset = [
                 "1240K/1000GP3_EUR_1240K.frq",
+                "genomeWideVariants_hg19/1000GP3_EUR_22M_noFixed.frq",
                 "genomeWideVariants_hg19/1000GP3_22M_noFixed_noChr.bed",
                 "genomeWideVariants_hg19/DummyDataset_EUR_22M_noFixed.bed",
                 "genomeWideVariants_hg19/DummyDataset_EUR_22M_noFixed.bim",
@@ -114,8 +115,8 @@ rule download_TKGWV2_support_files:
             ]
         )
     params:
-        url = config['netrules']['TKGWV2']['support-files-url'],
-        output_dir = config['netrules']['TKGWV2']['support-files-dir']
+        url        = config["netrules"]["TKGWV2"]["support-files-url"],
+        output_dir = config["netrules"]["TKGWV2"]["support-files-dir"]
     conda: "../envs/gdown-4.6.0.yml"
     log: "logs/04-kinship/TKGWV2/TKGWV2_download_support_files.log"
     shell: """
