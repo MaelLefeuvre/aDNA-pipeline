@@ -12,7 +12,7 @@ jobs:
      - name: Dry Run
        uses: snakemake/snakemake-github-action@v1.25.1
        with:
-        directory: './'
+        directory: ''
         snakefile: 'workflow/Snakefile'
         args: '--cores 1 --use-conda --conda-cleanup-pkgs cache --dry-run'
         stagein: |
