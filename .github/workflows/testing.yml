@@ -15,5 +15,8 @@ jobs:
         directory: './'
         snakefile: 'workflow/Snakefile'
         args: '--cores 1 --use-conda --conda-cleanup-pkgs cache --dry-run'
-        stagein: "snakemake --version"
+        stagein: |
+          "snakemake --version"
+          "ls -lh"
+          "pwd"
         show-disk-usage-on-error: true
