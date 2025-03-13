@@ -1,18 +1,34 @@
 # Instructions:
 # 
 # 1. Add fastq.gz files into a `original-data` directory, at the root of this repository.
-#    Directory structure must strictly follow the following nomenclature (see the README for an example)
-#    'original-data/samples/{sample-id}/{run-id}/{sample-id}_R{1,2}.fastq.gz'
-#
+# 
+#   - While custom paths to the files may be specified (see below) we highly recommend 
+#     that users structly  adhere to the following directory structure:
+# 
+#       > 'original-data/samples/{sample-id}/{run-id}/{sample-id}_R{1,2}.fastq.gz'
+# 
 # 2. Add target sample ids within this config file, under the 'samples' tag.
+#    - You may optionally provide custom paths to the R1 and R2 files, by specifying them inside a sample entry, 
+#      using the following structure:
+#
+#        > <sample-name>: {path:{r1: "path/to/R1.fq.gz", r2: "path/to/R2.fq.gz"}}
+#
+#    - If no file is provided for a given sample, Snakemake will then attempt to find matching files, using 
+#      the following directory structure:
+#
+#        > `original-data/samples/{sample-id}/{run-id}/{sample-id}_R{1,2}.fastq.gz`
+# 
+#    - Examples are provided below, and in the README.md file of this repository.
+# 
 # 3. Specify the name and protocol of each targeted sequencing-run for each sample. 
 #    Note that this pipeline can both handle paired-end and single-end sequencing protocols.
 samples:
-  test-ind1:
-    run-00: {protocol: 'paired'}
-    run-01: {protocol: 'paired'}
-  test-ind2:
-    run-00: {protocol: 'paired'}
-    run-01: {protocol: 'paired'}
-  test-ind3:
-    run-00: {protocol: 'paired'}
+  raw-fastq:
+    test-ind1:
+      run-00: {protocol: 'paired'}
+      run-01: {protocol: 'paired', path: {r1: "original-data/samples/test-ind1/run-01/test-ind1_R1.fastq.gz", r2: "original-data/samples/test-ind1/run-01/test-ind1_R2.fastq.gz"}}
+    test-ind2:
+      run-00: {protocol: 'paired'}
+      run-01: {protocol: 'paired'}
+    test-ind3:
+      run-00: {protocol: 'paired'}

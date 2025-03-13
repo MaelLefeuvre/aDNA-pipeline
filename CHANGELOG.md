@@ -1,4 +1,10 @@
 # Changelog
+## 0.4.3:
+### Breaking change(s)
+- Minimum supported snakemake version is now snakemake>=8
+
+### Features
+- (Breaking) added `path` entry to samples.yml. This allows users to specify custom paths for their R1 and R2 files, but changes the structure of the yaml, and forces the use of Snakemake
 ## 0.4.2:
 ### Features
 - Bump to snakemake-8+ (8.30.0). (Pipeline is still retrocompatible with snakemake>=7.20.0)

@@ -26,16 +26,29 @@ class ReferenceGenome:
             print(f" - {key}")
 
 
-
-
 def get_sample_names():
-    return [key for key in config["samples"].keys()]
+    # Order guaranteed to reflect the order of insertion, as of Python3.7+
+    return [key for key in config["samples"]["raw-fastq"].keys()]
 
 def get_illumina_protocol(wildcards):
-    return config["samples"][wildcards.sample][wildcards.run]["protocol"]
+    return config["samples"]["raw-fastq"][wildcards.sample][wildcards.run]["protocol"]
 
 def get_requested_sample_runs(wildcards):
-    return [key for key in config["samples"][wildcards.sample].keys()]
+    return [key for key in config["samples"]["raw-fastq"][wildcards.sample].keys()]
+
+
+_DEFAULT_FASTQ_R1 = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz"
+_DEFAULT_FASTQ_R2 = "original-data/samples/{sample}/{run}/{sample}_R2.fastq.gz"
+
+def get_fastq_sample_path(wildcards):
+    sample = config["samples"]["raw-fastq"][wildcards.sample][wildcards.run]
+    if "path" not in sample or sample["path"] is None:
+        sample["path"] = {
+            "r1" : _DEFAULT_FASTQ_R1,
+            "r2" : None if sample["protocol"] == "single" else _DEFAULT_FASTQ_R2
+        } 
+    return sample["path"]
+
 
 def resolve_aadr_version():
     """
