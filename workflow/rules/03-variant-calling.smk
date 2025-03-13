@@ -19,12 +19,16 @@ def get_pileup_input_bams(wildcards):
     PMD-rescaling method was requested by the user.
     """
     # ---- Print message on first call only.
-    def maybe_print(*args, **kwargs):
-        if getattr(get_pileup_input_bams, 'first_call', None) is None:
-            print(*args, **kwargs)
-    
     def disable_print():
         get_pileup_input_bams.first_call = False
+
+    def maybe_print(*args, disable_next = False, **kwargs):
+        if getattr(get_pileup_input_bams, 'first_call', None) is None:
+            print(*args, **kwargs)
+        if disable_next:
+            disable_print()
+
+    
 
     # ---- Run through the config file and extract sample ids 
     samples = get_sample_names()
@@ -39,7 +43,7 @@ def get_pileup_input_bams(wildcards):
             for sample_id, sample_values in additional_samples.items():
                 if "path" not in sample_values or sample_values["path"] is None:
                     sample_values["path"] = DEFAULT_FINAL_BAM.format(sample=sample_id) # Global variable. Yikes...
-                    #maybe_print("  - "+ sample_values["path"])
+                    #maybe_print("  - "+ sample_values["path"], file=sys.stderr)
     else:
         maybe_print("[NOTE]: No additional samples provided trough 'final-bams' keyword")
 
@@ -48,19 +52,18 @@ def get_pileup_input_bams(wildcards):
     # ---- if masking is required, delegate input definition to the appropraite rule.
     apply_masking = config['preprocess']['pmd-rescaling']['apply-masking']
     if apply_masking:
-        maybe_print("[NOTE]: Applying pmd-mask for variant calling.", file=sys.stderr)
+        maybe_print("[NOTE]: Applying pmd-mask for variant calling.", disable_next=True, file=sys.stderr)
         return expand(rules.run_pmd_mask.output.bam, sample = samples) + final_bams
 
     # ---- Return a list of input bam files for pileup
     rescaler = config['preprocess']['pmd-rescaling']['rescaler']
     if rescaler is None:
-        maybe_print("[NOTE]: Skipping PMD Rescaling for variant calling!", file=sys.stderr)
+        maybe_print("[NOTE]: Skipping PMD Rescaling for variant calling!", disable_next = True, file=sys.stderr)
         return expand(define_dedup_input_bam(wildcards), sample = samples) + final_bams
     else:
-        maybe_print("[NOTE]: Applying {rescaler} for variant calling.", file=sys.stderr)
+        maybe_print("[NOTE]: Applying {rescaler} for variant calling.", disable_next=True, file=sys.stderr)
         return expand(define_rescale_input_bam(wildcards), sample = samples) + final_bams
 
-    disable_print()
     raise RuntimeError(f'Invalid rescaler value "{rescaler}')
 
 

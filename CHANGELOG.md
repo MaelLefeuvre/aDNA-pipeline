@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0:
+### Features
+- Implement READv2 kinship estimation method
 ## 0.4.4:
 ### Features
 - Add 'final-bams' keyword in `samples.yml` file, which allows the addition of fully pre-processed files at the pileup stage.
