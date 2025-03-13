@@ -2,13 +2,13 @@
 netrules:
   reference-genomes:
     grch37:
-      url : "http://ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+      url : "ftp://ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
       path: "data/reference-genome/GRCh37/Homo_sapiens.GRCh37.dna.primary_assembly.fa"
     hs37d5:
-      url : "http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz"
+      url : "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz"
       path: "data/reference-genome/hs37d5/hs37d5.fa"
     human_g1k_v37:
-      url : "http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz"
+      url : "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz"
       path: "data/reference-genome/human_g1k_v37/human_g1k_v37.fasta"
   TKGWV2:
     support-files-url:       "https://drive.google.com/drive/folders/1Aw-0v_7CUorHJOLpCJ0QVCwEdH43HlO4"

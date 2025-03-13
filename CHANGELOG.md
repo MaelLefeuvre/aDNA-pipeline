@@ -1,4 +1,11 @@
 # Changelog
+## 0.4.2:
+### Features
+- Bump to snakemake-8+ (8.30.0). (Pipeline is still retrocompatible with snakemake>=7.20.0)
+### Fixes
+- Fix `pmd-mask-0.3.2` and `grups-rs-0.3.2` conda environments
+- Explicitly specify python3 instead of `python` in `get_bamlist_panel_coverage`
+
 ## 0.4.1:
 
 ### Features:

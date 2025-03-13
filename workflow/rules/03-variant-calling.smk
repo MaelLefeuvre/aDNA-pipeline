@@ -120,7 +120,7 @@ rule get_bamlist_panel_coverage:
         panel_size=$(cat {input.targets} | wc -l)
         for bam in $(cat {input.bamlist}); do
             depth=$(samtools depth -@ {threads} -b {input.targets} $bam | awk '($3>0)' | wc -l);
-            coverage=$(python -c "print(${{depth}}/${{panel_size}})")
+            coverage=$(python3 -c "print(${{depth}}/${{panel_size}})")
             echo -e ${{bam}}"\t"${{depth}}\t${{coverage}};
         done | sort -h -k2 | column -t > {output.coverage} 2> {log}
     """
@@ -238,7 +238,7 @@ rule ANGSD_haplo_to_plink:
     benchmark: "benchmarks/02-variant-calling/ANGSD_haplo_to_plink.tsv"
     conda:     "../envs/angsd-0.939.yml"
     priority:  15
-    shell: """
+    shell: r"""
         haploToPlink {input.haplos} {params.outputname} 2>  {log}
         sed -i 's/N/0/g' {output.tped}                  2>> {log}
         cat {input.bamlist} \

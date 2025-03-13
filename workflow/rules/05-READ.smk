@@ -136,7 +136,7 @@ rule run_READ:
     log:       "logs/03-kinship/READ/run_READ.log"
     benchmark: "benchmarks/03-kinship/READ/run_READ.tsv"
     conda:     "../envs/READ-1.0.yml"
-    shell: """
+    shell: r"""
         cwd=$(pwd)
         cd $(dirname {output.results})               2>  $cwd/{log}
         ln -srf $(which READscript.R) READscript.R   2>> $cwd/{log}
@@ -168,7 +168,7 @@ rule READ_get_relatedness_coefficient:
     output:
         relatedness = "results/03-kinship/READ/READ_relatedness_coefficients.txt"
     log: "logs/03-kinship/READ/READ_get_relatedness_coefficient.log"
-    shell: """
+    shell: r"""
         export LC_NUMERIC="en_US.UTF-8"
         sed 's/ /\t/g' {input.means} \
         | join -j1 -t$'\t' - {input.results} \

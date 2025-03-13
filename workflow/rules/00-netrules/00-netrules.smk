@@ -1,8 +1,10 @@
-from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 
 from os.path import dirname
-
-HTTP = HTTPRemoteProvider() # Anonymous 
+import snakemake
+if snakemake.__version__ >= "8":
+    include: "00-netrules-8.smk"
+else:
+    include: "00-netrules-7.smk"
 
 configfile: "config/config.yml"
 configfile: "config/netrules.yml"
@@ -16,7 +18,7 @@ rule download_1000_genomes:
     http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr${chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
     """
     input:
-        vcf = HTTP.remote("ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz")
+        vcf = storage.ftp("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz")
     output:
         vcf = "data/vcf/1000g-phase3/00-original/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz"
     log: "logs/00-netrules/download_1000_genomes/download_1000_genomes-chr{chr}.log"
@@ -29,7 +31,7 @@ rule fetch_samples_panel:
     Download samples metadata from the 1000g FTP website
     """
     input:
-        panel = HTTP.remote("ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel")
+        panel = storage.ftp("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel")
     output:
         panel = "data/vcf/1000g-phase3/samples-list/integrated_call_samples_v3.20130502.ALL.panel"
     log: "logs/00-netrules/fetch_samples_panel.log"
@@ -45,9 +47,9 @@ rule download_reich_1240K:
     Download the 1240K dataset from Reich Lab's website.
     """
     wildcard_constraints:
-        major = "\d+"
+        major = r"\d+"
     input:
-        tarball    = HTTP.remote("reichdata.hms.harvard.edu/pub/datasets/amh_repo/curated_releases/V{major}/V{major}.{minor}/SHARE/public.dir/v{major}.{minor}_1240K_public.tar", verify=False)
+        tarball    = storage.http("http://reichdata.hms.harvard.edu/pub/datasets/amh_repo/curated_releases/V{major}/V{major}.{minor}/SHARE/public.dir/v{major}.{minor}_1240K_public.tar")
     output:
         eigenstrat = multiext("data/Reich-dataset/1240K/v{major}.{minor}/v{major}.{minor}_1240K_public", ".snp", ".ind", ".geno")
     params:
@@ -65,7 +67,7 @@ rule download_reference_genome:
     Download a reference genome from a predefined ftp URL
     """
     input:
-        refgen = HTTP.remote(ReferenceGenome.get_url())
+        refgen = storage.ftp(ReferenceGenome.get_url())
     output:
         refgen  = ReferenceGenome.get_path() + ".gz"
     log: f"logs/00-netrules/download_reference_genome/{ReferenceGenome.get_path()}.log"
@@ -82,7 +84,7 @@ rule download_HapMapII_recombination_map:
     Download the 2011 HapMapII recombination map from ncbi.
     """
     input:
-        tarball = HTTP.remote("http://ftp.ncbi.nlm.nih.gov/hapmap/recombination/2011-01_phaseII_B37/genetic_map_HapMapII_GRCh37.tar.gz")
+        tarball = storage.ftp("ftp://ftp.ncbi.nlm.nih.gov/hapmap/recombination/2011-01_phaseII_B37/genetic_map_HapMapII_GRCh37.tar.gz")
     output:
         map     = expand("data/recombination-maps/HapMapII_GRCh37/genetic_map_GRCh37_chr{chr}.txt", chr=range(1, 23)),
         exclude = temp(expand("data/recombination-maps/HapMapII_GRCh37/genetic_map_GRCh37_chr{chr}.txt", chr=["X", "X_par1", "X_par2"])),
@@ -117,7 +119,7 @@ rule download_TKGWV2_support_files:
     params:
         url        = config["netrules"]["TKGWV2"]["support-files-url"],
         output_dir = config["netrules"]["TKGWV2"]["support-files-dir"]
-    conda: "../envs/gdown-4.6.0.yml"
+    conda: "../../envs/gdown-4.6.0.yml"
     log: "logs/04-kinship/TKGWV2/TKGWV2_download_support_files.log"
     shell: """
         gdown "{params.url}" -O {params.output_dir} --folder > {log} 2>&1
