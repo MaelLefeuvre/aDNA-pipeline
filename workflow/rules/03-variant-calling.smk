@@ -22,26 +22,45 @@ def get_pileup_input_bams(wildcards):
     def maybe_print(*args, **kwargs):
         if getattr(get_pileup_input_bams, 'first_call', None) is None:
             print(*args, **kwargs)
-            get_pileup_input_bams.first_call = False
+    
+    def disable_print():
+        get_pileup_input_bams.first_call = False
 
-    # Run through the config file and extract sample ids 
+    # ---- Run through the config file and extract sample ids 
     samples = get_sample_names()
 
-    # if masking is required, delegate input definition to the appropraite rule.
+    # ---- Optionally include already preprocessed 'final' bams inside the pileup.
+    #      These are specified in samples.yml using the 'final-bams' keyword
+    additional_samples = {}
+    if 'final-bams' in config['samples']:
+        additional_samples = config['samples']['final-bams']
+        if len(additional_samples) > 0:
+            maybe_print("[NOTE]: Adding additional samples within pileup:")
+            for sample_id, sample_values in additional_samples.items():
+                if "path" not in sample_values or sample_values["path"] is None:
+                    sample_values["path"] = DEFAULT_FINAL_BAM.format(sample=sample_id) # Global variable. Yikes...
+                    #maybe_print("  - "+ sample_values["path"])
+    else:
+        maybe_print("[NOTE]: No additional samples provided trough 'final-bams' keyword")
+
+    final_bams = [sample_values["path"] for sample_values in additional_samples.values()]
+
+    # ---- if masking is required, delegate input definition to the appropraite rule.
     apply_masking = config['preprocess']['pmd-rescaling']['apply-masking']
     if apply_masking:
         maybe_print("[NOTE]: Applying pmd-mask for variant calling.", file=sys.stderr)
-        return expand(rules.run_pmd_mask.output.bam, sample = samples)
+        return expand(rules.run_pmd_mask.output.bam, sample = samples) + final_bams
 
-    # Return a list of input bam files for pileup
+    # ---- Return a list of input bam files for pileup
     rescaler = config['preprocess']['pmd-rescaling']['rescaler']
     if rescaler is None:
         maybe_print("[NOTE]: Skipping PMD Rescaling for variant calling!", file=sys.stderr)
-        return expand(define_dedup_input_bam(wildcards), sample = samples)
+        return expand(define_dedup_input_bam(wildcards), sample = samples) + final_bams
     else:
         maybe_print("[NOTE]: Applying {rescaler} for variant calling.", file=sys.stderr)
-        return expand(define_rescale_input_bam(wildcards), sample = samples)
+        return expand(define_rescale_input_bam(wildcards), sample = samples) + final_bams
 
+    disable_print()
     raise RuntimeError(f'Invalid rescaler value "{rescaler}')
 
 

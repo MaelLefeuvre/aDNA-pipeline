@@ -1,4 +1,8 @@
 # Changelog
+## 0.4.4:
+### Features
+- Add 'final-bams' keyword in `samples.yml` file, which allows the addition of fully pre-processed files at the pileup stage.
+
 ## 0.4.3:
 ### Breaking change(s)
 - Minimum supported snakemake version is now snakemake>=8

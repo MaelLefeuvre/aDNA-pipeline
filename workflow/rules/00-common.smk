@@ -40,6 +40,8 @@ def get_requested_sample_runs(wildcards):
 _DEFAULT_FASTQ_R1 = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz"
 _DEFAULT_FASTQ_R2 = "original-data/samples/{sample}/{run}/{sample}_R2.fastq.gz"
 
+DEFAULT_FINAL_BAM = "original-data/samples/final-bams/{sample}.final.bam"
+
 def get_fastq_sample_path(wildcards):
     sample = config["samples"]["raw-fastq"][wildcards.sample][wildcards.run]
     if "path" not in sample or sample["path"] is None:
