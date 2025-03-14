@@ -12,8 +12,6 @@ dependencies:
   - conda-forge::zlib>=1.2.13
   - conda-forge::zlib-ng>=2.0.6
   - conda-forge::libdeflate>=1.17
-# ---- grups.plots dependencies ---- # 
-#  - conda-forge::r-base>=4.1.2
-#  - conda-forge::r-devtools>=2.4.5
-#  - conda-forge::r-mass
-#  - conda-forge::r-matrix
+  - conda-forge::r-base>=4.1.2
+  - conda-forge::r-devtools>=2.4.5
+

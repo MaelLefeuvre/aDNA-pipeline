@@ -139,7 +139,45 @@ kinship:
       - HG00101.SG
       - HG00102.SG
       - HG00103.SG
-      - HG00105.SG 
+      - HG00105.SG
+  READv2:                                      # ---- READv2 parameters
+    coverage-threshold: 10000                  # -- minimum number of non missing SNP targets required to include a
+                                               #    given sample within the analysis .
+                                               #    [<int> or "coverage"] (e.g.: 10000, "0.01X") 
+                                               #    -> integer values are interpreted as # of covered positions
+                                               #    -> suffix your value with 'X' to interpret it as coverage.
+                                               #
+    window-est:         False                  # -- Toggle legacy window-based estimate of P0. 
+                                               #    <bool> [True|False] (Default: False)
+                                               #
+    window-size:        1000000                # -- Default size of non-overlapping windows for the estimation of P0 
+                                               #    <int> (in base pairs) (Default: 1e6)
+                                               #
+    norm-method:        "median"               # -- READ Normalization method 
+                                               #    <str> [ median | mean | max | value ]
+                                               #
+    norm-value:         ~                      # -- Normalization value (Float). Ignored if norm-method != "value"
+                                               #    <float> (Default: None)
+                                               #
+    2pow:               False                  # -- Toggle alternate classification threshold
+                                               #    <bool> [True|False] (Default: False)
+                                               #      - When False: [0.96875,0.90625,0.8125,0.625]
+                                               #      - When True : [1-1/(2**4.5), 1-1/(2**3.5), 1-1/(2**2.5), 1-1/(2**1.5)]
+                                               #
+    add-proxies:        ~                      # -- Include additional 'proxy' individuals from the AADR 1240K dataset
+                                               #    within the input PLINK fileset. 
+                                               #    <str> [ "Reich" | None (~) ]
+                                               #
+    maf:                ~                      # -- Minor allele frequency filtration treshold (Float).
+                                               #    - Ignored if set to None (~)
+                                               #    - Requires caller="pileupCaller" and add-proxies="Reich". 
+                                               #    <float> (Default: 0.05)
+                                               #
+    proxies:            ~                      # -- Specify the sample-ids to fetch from the AADR dataset when
+                                               #    adding proxy individuals. Requires caller="pileupCaller" and 
+                                               #    add-proxies='Reich'
+                                               #    [<str>]
+                                               #
   GRUPS-rs:                                    # ---- GRUPS-rs parameters
     pedigree: |-                               # -- Path leading to a predefined template pedigree
       resources/grups-rs/template-pedigrees/siblings-pedigree.ped

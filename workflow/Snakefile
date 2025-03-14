@@ -2,7 +2,7 @@ configfile: "./config/config.yml"
 configfile: "./config/samples.yml"
 
 wildcard_constraints:
-    chr = "\d+",
+    chr = r"\d+",
 
 # ---- Generate a global metadata file. Keeps track of seeding values + commit hashes.
 checkpoint meta:
@@ -12,13 +12,14 @@ checkpoint meta:
 
 
 include: "rules/00-common.smk"
-include: "rules/00-netrules.smk"
+include: "rules/00-netrules/00-netrules.smk"
 include: "rules/00-preprocess-reference.smk"
 include: "rules/01-align-fastqs.smk"
 include: "rules/02-preprocess-bams.smk"
 include: "rules/03-variant-calling.smk"
 include: "rules/04-merge-reich-plink.smk"
 include: "rules/05-READ.smk"
+include: "rules/05-READv2.smk"
 include: "rules/05-TKGWV2.smk"
 include: "rules/05-grups-rs.smk"
 include: "rules/05-KIN.smk"
@@ -64,6 +65,11 @@ rule READ:
         rules.READ_get_pairwise_snp_overlap.output,
         rules.READ_get_relatedness_coefficient.output
 
+rule READv2:
+    input:
+        rules.meta.output,
+        rules.run_READv2.output
+
 rule GRUPS:
     input:
         rules.run_GRUPS.output
@@ -84,6 +90,7 @@ rule all:
         rules.qc.output,
         rules.TKGWV2.input,
         rules.READ.input,
+        rules.READv2.input,
         rules.GRUPS.input,
         rules.KIN.input,
         

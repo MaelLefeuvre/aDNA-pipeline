@@ -1,0 +1,8 @@
+name: snakemake-8.30.0
+channels:
+    - bioconda
+    - conda-forge
+dependencies:
+    - bioconda::snakemake=8.30.0
+    - bioconda::snakemake-storage-plugin-http
+    - bioconda::snakemake-storage-plugin-ftp

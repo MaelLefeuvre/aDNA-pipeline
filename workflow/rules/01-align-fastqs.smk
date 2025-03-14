@@ -26,9 +26,8 @@ rule adapter_removal_pe:
     workflows, we don't output a combined fq file, to allow specific mapping using bwa aln.
     """
     input:
+        unpack(get_fastq_sample_path),
         meta        = rules.meta.output,
-        forwd       = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz",
-        revrs       = "original-data/samples/{sample}/{run}/{sample}_R2.fastq.gz",
         metadata    = "results/meta/pipeline-metadata.yml",
     output:
         trimmed     = temp("results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.collapsed.gz"),
@@ -52,8 +51,8 @@ rule adapter_removal_pe:
     shell: """
         AdapterRemoval \
         --threads {threads} \
-        --file1 {input.forwd} \
-        --file2 {input.revrs} \
+        --file1 {input.r1} \
+        --file2 {input.r2} \
         --basename {params.base_name} \
         --minlength {params.min_length} \
         --minquality {params.min_quality} \
@@ -71,7 +70,7 @@ rule adapter_removal_se:
     workflows, we don't output a combined fq file, to allow specific mapping using bwa aln.
     """
     input:
-        fastq       = "original-data/samples/{sample}/{run}/{sample}_R1.fastq.gz",
+        unpack(get_fastq_sample_path),
         metadata    = rules.meta.output,
     output:
         truncated   = temp("results/01-preprocess/01-adapter_removal/{sample}/{run}/{sample}.truncated.gz"),
@@ -91,7 +90,7 @@ rule adapter_removal_se:
     shell: """
         AdapterRemoval \
         --threads {threads} \
-        --file1 {input.fastq} \
+        --file1 {input.r1} \
         --basename {params.base_name} \
         --minlength {params.min_length} \
         --minquality {params.min_quality} \
